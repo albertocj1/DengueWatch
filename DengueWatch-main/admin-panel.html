@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | DengueWatch NCR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<main class="flex-grow">
+    
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i data-feather="shield" class="text-indigo-300"></i>
+                <span class="font-bold text-xl">DengueWatch NCR</span>
+            </div>
+            
+            <div class="hidden md:flex space-x-6">
+                <a href="index.html" class="hover:text-indigo-300">Dashboard</a>
+                <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
+                <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
+                <a href="admin-panel.html" class="font-semibold hover:text-indigo-300">Admin</a>
+            </div>
+            
+            <button class="mobile-menu-button md:hidden">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+
+
+<main class="flex-grow flex items-center justify-center">
+        <!-- Mobile Menu -->
+        <div class="mobile-menu hidden md:hidden bg-blue-700 w-full absolute top-full left-0 z-50">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-4">
+                <a href="index.html" class="hover:text-indigo-300">Dashboard</a>
+                <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
+                <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
+                <a href="admin-panel.html" class="hover:text-indigo-300">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Panel Content -->
+    <div class="container mx-auto px-4 py-12">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center mb-8">
+                <i data-feather="settings" class="w-8 h-8 text-blue-600 mr-3"></i>
+                <h1 class="text-3xl font-bold">Admin Panel</h1>
+            </div>
+            <!-- Admin Options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Data Management Card -->
+                <a href="admin.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition cursor-pointer">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                            <i data-feather="database" class="text-blue-600"></i>
+                        </div>
+                        <h2 class="text-xl font-bold">Data Management</h2>
+                    </div>
+                    <p class="text-gray-600">Upload and manage dengue case data for all NCR regions.</p>
+                </a>
+
+                <!-- Alerts Management Card -->
+                <div id="update-alerts-btn" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition cursor-pointer">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                            <i data-feather="alert-triangle" class="text-blue-600"></i>
+                        </div>
+                        <h2 class="text-xl font-bold">Update Alerts</h2>
+                    </div>
+                    <p class="text-gray-600">Modify recommended actions shown in alert details.</p>
+                </div>
+            </div>
+
+            <!-- Alerts Management Section (Hidden by default) -->
+            <div id="alerts-management" class="hidden bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Update Alert Recommendations</h2>
+                    <button id="back-to-main" class="text-blue-600 hover:text-blue-700 flex items-center">
+                        <i data-feather="arrow-left" class="w-4 h-4 mr-1"></i>
+                        Back to Admin Panel
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select City</label>
+                    <select id="city-select" class="w-full p-2 border rounded-lg">
+                        <option value="">-- Select a City --</option>
+                        <option value="Manila">Manila</option>
+                        <option value="Quezon City">Quezon City</option>
+                        <option value="Caloocan">Caloocan</option>
+                        <option value="Las Piñas">Las Piñas</option>
+                        <option value="Makati">Makati</option>
+                        <option value="Malabon">Malabon</option>
+                        <option value="Mandaluyong">Mandaluyong</option>
+                        <option value="Marikina">Marikina</option>
+                        <option value="Muntinlupa">Muntinlupa</option>
+                        <option value="Navotas">Navotas</option>
+                        <option value="Parañaque">Parañaque</option>
+                        <option value="Pasay">Pasay</option>
+                        <option value="Pasig">Pasig</option>
+                        <option value="San Juan">San Juan</option>
+                        <option value="Taguig">Taguig</option>
+                        <option value="Valenzuela">Valenzuela</option>
+                        <option value="Pateros">Pateros</option>
+                    </select>
+                </div>
+
+                <div id="alert-form" class="hidden">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Recommended Actions</label>
+                        <div class="space-y-3">
+                            <div class="flex items-start">
+                                <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action 1" value="Conduct immediate fogging operations">
+                                <button class="remove-action-btn text-red-600 hover:text-red-700">
+                                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-start">
+                                <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action 2" value="Deploy additional medical teams">
+                                <button class="remove-action-btn text-red-600 hover:text-red-700">
+                                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-start">
+                                <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action 3" value="Issue public health advisory">
+                                <button class="remove-action-btn text-red-600 hover:text-red-700">
+                                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button id="add-action-btn" class="mt-3 text-blue-600 hover:text-blue-700 flex items-center text-sm">
+                            <i data-feather="plus" class="w-4 h-4 mr-1"></i>
+                            Add another action
+                        </button>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Risk Assessment Text</label>
+                        <textarea id="risk-assessment-text" class="w-full p-2 border rounded-lg h-24">This area has exceeded the epidemic threshold with a rapid increase in cases.</textarea>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button id="save-alert-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+    <!-- Footer -->
+    <footer class="bg-blue-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i data-feather="shield"></i>
+                        <span class="font-bold">DengueWatch NCR</span>
+                    </div>
+                    <p class="text-blue-300 mt-2">Administrative portal for data management</p>
+                </div>
+            </div>
+            <div class="border-t border-blue-700 mt-6 pt-6 text-sm text-center text-blue-400">
+                © 2025 DengueWatch NCR. Restricted access.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-feather="check" class="w-8 h-8 text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Changes Saved</h3>
+                <p class="text-gray-600 mb-6">The alert recommendations have been updated successfully.</p>
+                <button id="close-success-modal" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+
+            // Toggle between admin panel and alerts management
+            const updateAlertsBtn = document.getElementById('update-alerts-btn');
+            const backToMainBtn = document.getElementById('back-to-main');
+            const alertsManagement = document.getElementById('alerts-management');
+            const adminPanel = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2');
+
+            updateAlertsBtn.addEventListener('click', function() {
+                adminPanel.classList.add('hidden');
+                alertsManagement.classList.remove('hidden');
+            });
+
+            backToMainBtn.addEventListener('click', function() {
+                adminPanel.classList.remove('hidden');
+                alertsManagement.classList.add('hidden');
+            });
+
+            // City select handler
+            const citySelect = document.getElementById('city-select');
+            const alertForm = document.getElementById('alert-form');
+
+            citySelect.addEventListener('change', function() {
+                if (this.value) {
+                    // In a real app, you would fetch the existing recommendations for this city
+                    alertForm.classList.remove('hidden');
+                } else {
+                    alertForm.classList.add('hidden');
+                }
+            });
+
+            // Add new action
+            const addActionBtn = document.getElementById('add-action-btn');
+            const actionsContainer = document.querySelector('.space-y-3');
+
+            addActionBtn.addEventListener('click', function() {
+                const newActionDiv = document.createElement('div');
+                newActionDiv.className = 'flex items-start';
+                newActionDiv.innerHTML = `
+                    <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="New action">
+                    <button class="remove-action-btn text-red-600 hover:text-red-700">
+                        <i data-feather="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                actionsContainer.appendChild(newActionDiv);
+                feather.replace();
+                
+                // Add event to new remove button
+                newActionDiv.querySelector('.remove-action-btn').addEventListener('click', function() {
+                    newActionDiv.remove();
+                });
+            });
+
+            // Remove action
+            document.querySelectorAll('.remove-action-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.parentElement.remove();
+                });
+            });
+
+            // Save changes
+            const saveAlertBtn = document.getElementById('save-alert-btn');
+            const successModal = document.getElementById('success-modal');
+            const closeSuccessModal = document.getElementById('close-success-modal');
+
+            saveAlertBtn.addEventListener('click', function() {
+                const city = citySelect.value;
+                const actions = Array.from(document.querySelectorAll('.alert-action')).map(input => input.value);
+                const assessment = document.getElementById('risk-assessment-text').value;
+
+                // In a real app, you would save this to your database/API
+                console.log('Saving for city:', city);
+                console.log('Actions:', actions);
+                console.log('Assessment:', assessment);
+
+                // Show success modal
+                successModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+
+            closeSuccessModal.addEventListener('click', function() {
+                successModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            });
+
+            successModal.addEventListener('click', function(e) {
+                if (e.target === successModal) {
+                    successModal.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+
+/* Base Styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Arial", sans-serif;
+    background-color: #f9fafb;
+    margin: 0;
+    padding: 0;
+}
+
+/* Utility Classes */
+.bg-blue-600 { background-color: #2563eb; }
+.bg-blue-700 { background-color: #1d4ed8; }
+.bg-blue-800 { background-color: #1e40af; }
+.text-blue-600 { color: #2563eb; }
+.text-blue-700 { color: #1d4ed8; }
+.text-blue-800 { color: #1e40af; }
+.text-blue-300 { color: #93c5fd; }
+.text-blue-400 { color: #60a5fa; }
+.hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+.hover\:bg-blue-800:hover { background-color: #1e40af; }
+.hover\:text-blue-200:hover { color: #bfdbfe; }
+.hover\:text-blue-300:hover { color: #93c5fd; }
+/* Navbar */
+nav {
+    background-color: #2563eb;
+    color: white;
+    position: relative;
+}
+/* Mobile Menu */
+.mobile-menu {
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-menu a {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-menu a:last-child {
+    border-bottom: none;
+}
+/* Risk Level Colors */
+.risk-low { background-color: #4ade80; }
+.risk-moderate { background-color: #fbbf24; }
+.risk-high { background-color: #f87171; }
+.risk-very-high { background-color: #dc2626; }
+.risk-path {
+    transition: transform 0.25s ease, filter 0.25s ease;
+    cursor: pointer;
+}
+
+.risk-path:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+}
+
+/* Card Styles */
+.card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Hero Section */
+.hero-section {
+    position: relative;
+    padding: 4rem 0;
+    text-align: center;
+    color: white;
+    background-color: #1e40af;
+}
+.hero-section h1 {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .hero-section h1 {
+        font-size: 3rem;
+        line-height: 1;
+    }
+}
+/* Map Container */
+#map-container { 
+    height: 500px; 
+    background-color: #e5e7eb;
+    position: relative;
+    overflow: hidden;
+}
+
+#ncr-map {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* SVG Map Hover Effects */
+#ncr-map path {
+    cursor: pointer;
+    transition: transform 0.3s ease, filter 0.3s ease, stroke 0.3s ease;
+    stroke-width: 1px;
+    transform-origin: center;
+}
+
+/* Lift on hover */
+#ncr-map path:hover {
+    transform: translateY(-6px) scale(1.02);
+    stroke: #000000;
+    stroke-width: 3px;
+    filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.25));
+    animation: pulse-shadow 1.5s ease-in-out infinite;
+}
+/* Prevention Styles */
+.prevention-card {
+    transition: all 0.3s ease;
+}
+
+.prevention-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Admin Styles */
+#dropzone {
+    transition: border-color 0.3s ease;
+    background-color: #f8fafc;
+}
+
+#dropzone.highlight {
+    border-color: #2563eb;
+}
+/* Alert Styles */
+.alert-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.alert-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Styles */
+#alert-modal {
+    transition: opacity 0.3s ease;
+}
+
+#alert-modal .modal-content {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+/* Footer */
+footer {
+    background-color: #1e40af;
+    color: white;
+    padding: 2rem 0;
+}
+
+/* Responsive Utilities */
+@media (max-width: 767px) {
+    .md\:flex {
+        display: none;
+    }
+    
+    .md\:hidden {
+        display: block;
+    }
+}
+
+/* Admin submit button */
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Weather forecast responsive scrolling */
+.weather-scroll {
+    overflow-x: visible;
+}
+
+@media (max-width: 767px) {
+    .weather-scroll {
+        overflow-x: auto;
+    }
+}

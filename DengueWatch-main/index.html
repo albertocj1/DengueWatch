@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DengueWatch NCR Alert</title>
+    <link rel="icon" type="image/x-icon" href="http://static.photos/medical/32x32/1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #vanta-globe {
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i data-feather="shield" class="text-indigo-300"></i>
+                <span class="font-bold text-xl">DengueWatch NCR</span>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="index.html" class="hover:text-indigo-300">Dashboard</a>
+                <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
+                <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
+                <a href="admin-panel.html" class="hover:text-indigo-300">Admin</a>
+            </div>
+            <button class="mobile-menu-button md:hidden">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div class="mobile-menu hidden md:hidden bg-blue-700 w-full absolute top-full left-0 z-50">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-4">
+                <a href="index.html" class="hover:text-indigo-300">Dashboard</a>
+                <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
+                <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
+                <a href="admin-panel.html" class="hover:text-indigo-300">Admin</a>
+            </div>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <div id="vanta-globe" class="hero-section bg-undefined-600 text-white">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">Dengue Outbreak Risk Tracker</h1>
+            <p class="text-xl mb-8">Real-time monitoring for NCR regions</p>
+        </div>
+    </div>
+    <!-- Dashboard Grid -->
+    <div class="container mx-auto px-4 py-12">
+        <div class="dashboard-grid">
+            <!-- Risk Overview Card -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Current Risk Level</h2>
+                    <span class="risk-high px-3 py-1 rounded-full text-white text-sm font-medium">HIGH ALERT</span>
+                </div>
+                <p class="text-gray-600 mb-4">NCR-wide dengue risk assessment</p>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+            <!-- Map Container -->
+            <div class="card md:col-span-2">
+                <div id="map-container"
+                    class="relative w-full h-[500px] bg-blue-50 rounded-lg overflow-hidden flex items-center justify-center">
+                    <svg id="ncr-map" class="w-full h-full">
+
+                        <path
+                            class="risk-path"
+                            d="M 357.135 189.2145 L 356.5428 198.5914 L 359.9481 199.0849 L 364.3157 197.0121 L 363.6495 195.1367 L 365.13 194.2484 L 366.3145 196.3212 L 368.6833 194.7419 L 374.0874 197.0121 L 374.3835 195.4328 L 372.7549 193.2614 L 376.7524 180.726 L 379.7135 176.7778 L 381.194 165.3282 L 385.7838 161.084 L 389.5592 160.0969 L 389.115 157.4319 L 393.1865 154.2734 L 393.1865 149.8317 L 396.2957 149.5356 L 400.2932 144.9953 L 393.1865 144.3043 L 392.0761 145.9823 L 392.1502 150.5227 L 390.5215 152.6941 L 384.0811 148.0551 L 381.2681 150.1278 L 380.5278 164.3412 L 376.9745 165.1308 L 367.5729 171.6453 L 358.7636 170.4608 L 354.8402 174.3103 L 355.0622 178.5545 L 355.9506 178.2584 L 357.2831 185.6612 L 358.3195 185.5625 L 358.8377 188.5236 L 358.7636 190.399 L 357.135 189.2145 Z M 391.854 127.9195 L 395.9256 128.3143 L 396.8139 123.8727 L 397.184 119.431 L 399.4789 118.9375 L 401.3296 114.9893 L 404.2907 113.7062 L 402.5881 111.0412 L 404.8829 108.9684 L 405.8453 109.8567 L 410.5831 107.8827 L 412.2857 105.0203 L 411.5454 102.6514 L 414.2845 102.0591 L 414.5065 99.4928 L 416.1352 99.4928 L 416.5053 102.1578 L 417.0235 98.2097 L 418.5781 98.7032 L 419.7625 96.6304 L 432.2732 97.7162 L 434.272 96.1369 L 435.3083 97.5188 L 436.937 95.446 L 443.8215 95.1499 L 447.4489 91.794 L 449.9658 84.6873 L 453.9633 83.6015 L 459.0713 76.1988 L 451.5945 74.3234 L 448.0411 71.2636 L 445.3761 71.5597 L 441.4527 66.9206 L 441.1565 70.7701 L 439.676 70.3753 L 438.0474 67.2167 L 437.3811 70.1778 L 436.4928 70.1778 L 434.42 63.3673 L 433.3836 65.9336 L 431.829 59.5178 L 431.0147 60.8997 L 430.6446 59.0243 L 429.09 58.3334 L 428.2757 59.5178 L 428.3497 53.9904 L 426.8692 55.1749 L 426.1289 53.2995 L 424.5743 56.2606 L 422.7977 54.484 L 422.2795 56.0632 L 421.4652 54.8788 L 420.1327 56.3593 L 419.6885 54.7801 L 418.43 57.3464 L 415.4689 57.2477 L 413.8403 63.466 L 412.3597 64.3543 L 412.5078 68.6973 L 410.7311 68.796 L 411.1753 70.8688 L 413.3961 69.5856 L 413.2481 77.2845 L 396.0736 83.799 L 389.2631 87.8458 L 387.1163 86.2665 L 385.1175 87.5497 L 383.785 91.794 L 387.6345 92.0901 L 393.5567 97.2227 L 390.9657 99.098 L 392.8164 103.7371 L 392.0761 105.2177 L 387.7825 105.3164 L 382.3785 101.763 L 380.4538 103.9345 L 388.1527 108.0801 L 388.1527 110.5477 L 390.5956 110.5477 L 390.8917 113.5088 L 387.1163 114.101 L 388.4488 116.5686 L 386.302 121.3064 L 386.376 124.9584 L 388.967 126.9325 L 391.854 126.439 L 391.854 127.9195 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Caloocan"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 388.3747 447.7195 L 390.8177 448.1143 L 388.1527 437.0595 L 390.5956 421.8591 L 397.9243 406.8562 L 399.2568 393.7286 L 396.1477 393.926 L 393.1865 391.6558 L 393.0385 384.0556 L 391.4839 383.3647 L 391.3358 380.601 L 389.3371 381.6867 L 389.4852 379.4166 L 387.6345 375.8632 L 382.6746 374.9749 L 382.9707 361.6499 L 379.1213 354.4445 L 374.9757 351.7795 L 375.3458 349.1145 L 372.9029 344.6728 L 370.8302 344.6728 L 367.795 341.3169 L 366.0183 347.4366 L 359.3558 355.1354 L 359.726 357.2082 L 357.135 357.7017 L 356.8389 360.1693 L 358.3195 360.8603 L 355.7285 363.4266 L 358.9117 374.7775 L 358.6156 383.0686 L 361.5767 390.4714 L 365.204 394.3208 L 369.2756 396.0975 L 370.46 403.3028 L 371.4224 402.3158 L 371.2743 406.8562 L 373.4952 407.251 L 374.3095 412.8771 L 377.4186 417.7136 L 377.7888 422.8462 L 379.7135 422.7475 L 381.7863 427.0904 L 383.1188 431.4334 L 382.3045 433.901 L 387.0422 437.7504 L 386.1539 441.896 L 387.0422 445.2519 L 388.3747 447.7195 Z M 366.6106 339.1454 L 366.4625 336.974 L 364.7599 338.3558 L 360.6883 349.608 L 365.5002 342.8962 L 365.6482 338.948 L 366.6106 339.1454 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Las Piñas"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 407.1038 263.1436 L 392.8904 250.9043 L 379.8615 268.3749 L 379.9356 270.2503 L 382.0824 277.1595 L 387.4864 281.2064 L 387.7085 288.8066 L 390.6696 290.1884 L 391.78 298.7756 L 396.3697 299.3678 L 399.775 297.2951 L 404.8829 310.5214 L 411.0272 316.1475 L 422.4275 307.4616 L 423.5379 303.4147 L 424.7964 303.1186 L 424.2042 300.7497 L 426.7211 297.5912 L 426.6471 295.2223 L 430.8667 294.1366 L 426.277 286.1416 L 427.0913 284.9571 L 428.5718 287.4247 L 431.0888 281.2064 L 428.6458 278.9362 L 430.7186 271.7308 L 417.9118 262.2553 L 407.1038 263.1436 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Makati"
+                            data-risk="High"
+                            data-cases="16"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 352.1011 149.4369 L 350.5465 145.7849 L 346.2529 147.5615 L 341.5152 152.0032 L 337.9618 147.2654 L 338.0358 144.2056 L 335.5189 142.1328 L 335.1488 138.8756 L 333.5202 137.1977 L 333.8163 134.9275 L 328.7083 131.3741 L 326.3395 135.5197 L 332.4097 144.5017 L 331.8915 149.4369 L 340.4047 168.0919 L 343.2918 180.726 L 344.9945 182.7001 L 347.0672 179.739 L 350.4725 187.3391 L 354.1739 181.5156 L 351.0647 176.7778 L 350.7686 173.6193 L 355.6545 174.5077 L 358.7636 170.4608 L 367.0547 171.8427 L 376.9745 165.1308 L 380.5278 164.3412 L 381.2681 150.1278 L 377.7147 158.419 L 369.2756 164.2425 L 364.3897 161.5775 L 363.3533 157.8267 L 360.3182 157.3332 L 359.652 154.1747 L 355.0622 152.6941 L 352.2492 156.9384 L 352.1011 149.4369 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Malabon"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 407.1038 263.1436 L 414.8027 262.2553 L 422.5756 257.4188 L 422.0574 252.0888 L 423.612 248.5354 L 424.7964 249.2264 L 424.4263 240.5404 L 422.7236 241.7249 L 424.5003 233.8286 L 424.1302 230.2753 L 418.504 230.5714 L 412.2857 237.8754 L 405.8453 240.5404 L 401.5517 236.1975 L 399.4049 236.1975 L 392.8904 250.9043 L 407.1038 263.1436 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Mandaluyong"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 379.1213 266.993 L 379.4174 268.4736 L 380.6018 267.2891 L 388.0046 257.2214 L 389.189 257.1227 L 388.2267 255.9382 L 392.8904 250.9043 L 399.4049 236.1975 L 397.184 232.0519 L 391.854 226.9193 L 391.706 224.9453 L 383.1928 219.1217 L 383.4889 217.7399 L 380.7499 214.6801 L 379.9356 215.5684 L 371.8665 207.0799 L 374.0874 197.0121 L 368.6833 194.7419 L 366.3145 196.3212 L 364.8339 194.2484 L 363.6495 195.1367 L 364.0196 198.0978 L 354.7661 199.8745 L 354.2479 198.1966 L 353.5077 199.8745 L 354.544 201.8486 L 352.8414 204.0201 L 351.2868 203.9214 L 351.731 205.8954 L 349.6582 205.5993 L 351.2128 209.7449 L 349.5842 218.036 L 351.4349 219.6153 L 350.3245 220.6023 L 351.731 220.6023 L 350.3985 221.7867 L 351.657 222.379 L 350.3985 224.5504 L 351.657 225.5375 L 350.3985 225.9323 L 351.879 226.8206 L 350.9167 228.3012 L 352.0271 229.1895 L 350.7686 229.4856 L 352.1752 231.1636 L 350.3985 231.9532 L 348.1777 229.2882 L 343.5879 218.8256 L 344.2542 225.4388 L 347.7335 230.374 L 339.8125 232.8416 L 339.2943 235.5066 L 341.145 237.5793 L 366.9807 235.013 L 369.0535 235.704 L 371.4964 239.6521 L 374.4575 240.7378 L 380.8239 234.8156 L 389.6332 235.3091 L 392.8164 238.7638 L 385.9318 235.5066 L 382.1564 236.1975 L 374.3095 243.1067 L 367.2028 236.0988 L 361.7247 237.7767 L 352.1752 237.0858 L 350.0283 238.8625 L 352.0271 241.034 L 348.5478 257.7149 L 351.4349 251.9901 L 352.6933 244.8834 L 354.544 242.6132 L 354.6181 239.2573 L 355.3583 242.4158 L 353.6557 245.1795 L 356.0246 243.8964 L 353.5077 248.4367 L 354.322 249.5225 L 356.987 245.3769 L 357.3571 247.0549 L 355.8765 248.9303 L 356.7649 249.5225 L 358.2454 247.351 L 356.9129 250.1147 L 357.5792 250.9043 L 360.0221 249.1277 L 358.2454 251.3978 L 359.0597 252.4836 L 361.9468 249.2264 L 361.7247 252.4836 L 367.795 258.8993 L 371.7925 271.2373 L 377.2706 267.4866 L 379.1213 266.993 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Manila"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 457.1465 207.6721 L 457.8128 202.8356 L 459.9596 196.716 L 462.4025 196.9134 L 465.7338 194.5445 L 468.6949 196.4199 L 471.5079 194.1497 L 476.3197 197.6043 L 474.9872 189.4119 L 476.8379 180.1338 L 479.4289 177.4688 L 479.651 174.8038 L 476.3938 166.9075 L 476.6158 163.9464 L 473.0625 160.8866 L 471.0638 165.1308 L 468.1767 160.5904 L 466.5481 161.084 L 465.6597 158.419 L 464.4753 159.5047 L 464.8454 160.8866 L 462.7727 159.9982 L 461.6622 162.071 L 461.5882 159.8008 L 458.7011 157.3332 L 453.9633 164.6373 L 454.4815 170.2634 L 451.4464 168.4867 L 450.0399 169.4738 L 448.1892 174.1128 L 443.9696 178.9493 L 445.3761 182.0091 L 444.932 184.1806 L 446.7827 186.4508 L 443.6735 189.5106 L 442.1189 189.4119 L 440.7864 194.051 L 437.9733 197.8017 L 437.6032 203.5266 L 435.6785 204.711 L 436.937 211.028 L 436.2707 212.9034 L 438.9357 214.4827 L 441.3046 212.706 L 443.0813 208.7578 L 445.8203 212.4099 L 445.9683 210.2384 L 452.2607 211.028 L 452.7049 212.5086 L 458.1829 211.3241 L 457.1465 207.6721 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Marikina"
+                            data-cases="111"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 391.1878 448.0156 L 388.6708 460.1562 L 387.0422 479.6995 L 395.8515 475.7514 L 413.2481 456.899 L 415.3208 460.7484 L 417.9118 460.7484 L 420.4288 457.3925 L 420.3547 453.8391 L 421.4652 454.4314 L 422.2795 450.878 L 423.1678 450.7793 L 423.9081 448.5091 L 421.7613 446.0416 L 419.3924 430.3477 L 419.3924 380.7984 L 420.4288 380.7984 L 423.4639 362.6369 L 414.8767 361.4525 L 414.9507 373.6917 L 410.7311 380.3049 L 411.3974 386.1284 L 399.3308 395.1104 L 397.9243 406.8562 L 390.5956 421.8591 L 388.1527 437.0595 L 388.8929 443.1791 L 391.1878 448.0156 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Muntinlupa"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 354.7661 199.8745 L 356.6168 198.8875 L 356.3947 196.1238 L 357.135 189.2145 L 358.7636 190.399 L 358.8377 188.5236 L 358.3195 185.5625 L 357.2831 185.6612 L 355.9506 178.2584 L 355.0622 178.5545 L 354.8402 174.3103 L 350.7686 173.6193 L 351.0647 176.7778 L 354.1739 181.5156 L 350.4725 187.3391 L 347.0672 179.739 L 344.4763 182.6014 L 339.9606 166.7101 L 331.8915 149.4369 L 332.4097 144.5017 L 326.3395 135.5197 L 328.7083 131.3741 L 323.3043 133.9404 L 320.3432 141.5406 L 325.5252 148.3512 L 329.5967 158.2215 L 343.0697 181.1208 L 343.4399 184.2793 L 340.5528 187.5366 L 345.6607 192.4717 L 346.1049 197.4069 L 347.7335 196.3212 L 349.8063 199.0849 L 352.0271 198.4927 L 353.8778 194.4458 L 353.2856 198.7888 L 354.6181 198.0978 L 354.7661 199.8745 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Navotas"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 393.0385 384.0556 L 393.1125 391.4584 L 399.1828 394.5182 L 401.1815 394.5182 L 410.7311 387.1154 L 411.6935 385.3388 L 410.7311 380.3049 L 414.9507 373.6917 L 414.8027 347.3378 L 416.5053 338.2571 L 415.9871 329.3738 L 410.2129 324.8334 L 408.3622 325.5243 L 406.6596 322.6619 L 404.4388 322.5632 L 402.8842 324.4386 L 398.8867 324.3399 L 395.9996 327.301 L 394.445 326.6101 L 388.8929 329.2751 L 386.8942 327.9919 L 383.1188 330.8543 L 382.5265 327.5971 L 380.6758 326.2153 L 382.4525 321.8723 L 380.7499 320.6878 L 381.3421 318.0228 L 379.9356 315.4566 L 381.2681 309.1395 L 380.972 297.0977 L 378.8992 295.5184 L 366.0183 297.7886 L 366.4625 309.0408 L 367.869 309.3369 L 366.2404 312.298 L 370.9782 314.4695 L 369.4977 316.1475 L 366.4625 314.1734 L 362.9092 322.958 L 373.9393 328.7816 L 371.4224 337.961 L 367.795 341.3169 L 370.8302 344.6728 L 372.9029 344.6728 L 375.3458 349.1145 L 374.9757 351.7795 L 379.1213 354.4445 L 382.9707 361.6499 L 382.6746 374.9749 L 387.6345 375.8632 L 389.4852 379.4166 L 389.041 381.4893 L 391.3358 380.601 L 391.4839 383.3647 L 393.0385 384.0556 Z M 372.6068 329.2751 L 368.6833 328.4854 L 368.0911 333.4206 L 369.6457 334.4077 L 372.6068 329.2751 Z M 385.0435 317.628 L 383.785 319.1086 L 382.4525 321.8723 L 389.2631 320.3917 L 385.0435 317.628 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Parañaque"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 380.7499 320.6878 L 381.9343 321.3788 L 380.6758 326.2153 L 382.5265 327.5971 L 383.1188 330.8543 L 386.8942 327.9919 L 389.041 329.1764 L 394.445 326.6101 L 395.9996 327.301 L 398.9607 324.2412 L 407.4739 323.1554 L 397.8503 298.7756 L 391.78 298.7756 L 390.6696 290.1884 L 387.7085 288.8066 L 387.5604 281.4038 L 382.0824 277.1595 L 380.2317 268.5723 L 379.1213 266.993 L 377.2706 267.4866 L 371.7925 271.2373 L 370.312 266.8943 L 370.9782 271.7308 L 366.4625 273.9023 L 365.7963 275.5803 L 368.3132 287.1286 L 366.0183 290.6819 L 366.0183 297.7886 L 378.8992 295.5184 L 380.6018 296.4067 L 381.2681 308.9421 L 379.9356 315.4566 L 381.3421 318.0228 L 380.7499 320.6878 Z M 389.2631 320.3917 L 387.2643 321.8723 L 382.6006 321.7736 L 385.0435 317.628 L 389.2631 320.3917 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Pasay"
+                            data-risk="High"
+                            data-cases="36"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 439.9721 283.674 L 441.0825 283.674 L 441.5267 287.5234 L 451.5204 286.0428 L 452.6308 289.8923 L 455.74 285.1545 L 456.4063 280.6141 L 453.4452 278.0478 L 453.8153 275.2841 L 451.0022 263.6371 L 461.7363 250.7069 L 461.144 244.0938 L 462.9207 240.7378 L 461.7363 234.7169 L 463.587 233.1377 L 461.6622 232.1506 L 460.5518 225.8336 L 464.0311 220.6023 L 463.2168 218.2334 L 459.5895 215.371 L 458.9232 211.5216 L 452.7049 212.5086 L 452.2607 211.028 L 446.4865 210.2384 L 445.8203 212.4099 L 443.0813 208.7578 L 438.3435 216.7528 L 439.3799 219.6153 L 445.006 225.2414 L 447.2268 230.9662 L 445.9683 232.1506 L 443.5254 229.1895 L 441.8228 229.3869 L 442.0449 241.3301 L 432.6433 238.1716 L 425.8328 240.7378 L 424.4263 243.008 L 424.7224 249.5225 L 423.612 248.5354 L 422.0574 252.0888 L 422.5756 257.4188 L 414.8027 262.2553 L 418.2079 262.354 L 429.9783 270.1516 L 430.7186 271.7308 L 429.016 276.7647 L 436.7889 278.0478 L 439.1578 280.318 L 439.9721 283.674 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Pasig"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 426.277 286.1416 L 429.9043 291.9651 L 433.4577 292.1625 L 432.6433 291.5703 L 439.9721 283.674 L 439.1578 280.318 L 436.7889 278.0478 L 429.016 276.7647 L 428.6458 279.0349 L 431.0888 281.2064 L 428.5718 287.4247 L 427.0913 284.9571 L 426.277 286.1416 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Pateros"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 398.8867 219.9114 L 402.6621 219.4178 L 407.77 225.6362 L 409.0285 224.6491 L 411.8415 222.5764 L 413.9143 223.5634 L 417.1715 222.5764 L 418.8742 227.5116 L 422.5756 225.9323 L 424.5003 232.5454 L 422.7236 241.7249 L 424.4263 240.5404 L 424.4263 243.008 L 425.8328 240.7378 L 432.3472 238.1716 L 442.0449 241.3301 L 441.8228 229.3869 L 443.5254 229.1895 L 445.9683 232.1506 L 447.0788 231.361 L 445.006 225.2414 L 439.0097 218.8256 L 438.9357 214.4827 L 436.2707 212.9034 L 436.937 211.028 L 435.6785 204.711 L 437.6032 203.5266 L 437.9733 197.8017 L 440.7864 194.051 L 442.1189 189.4119 L 443.6735 189.5106 L 446.7827 186.4508 L 444.932 184.1806 L 444.4138 177.4688 L 445.9683 177.074 L 451.1503 168.4867 L 453.8153 170.9543 L 454.8517 169.6712 L 453.9633 164.6373 L 460.1817 155.1617 L 462.6246 148.746 L 462.3285 136.1119 L 468.3988 134.3353 L 467.4364 127.426 L 468.991 122.3921 L 470.3975 123.5765 L 471.0638 122.5895 L 470.6196 111.5347 L 471.804 108.6723 L 475.9496 108.5736 L 476.4678 106.0073 L 474.6171 103.441 L 474.6171 101.1708 L 475.9496 97.5188 L 479.1328 94.8538 L 474.247 89.9186 L 469.139 96.6304 L 469.6572 94.6564 L 466.5481 93.5706 L 465.6597 81.0353 L 469.2871 81.0353 L 466.252 74.126 L 461.144 77.2845 L 458.5531 76.3962 L 454.1854 83.4041 L 449.9658 84.6873 L 447.4489 91.794 L 443.8215 95.1499 L 436.937 95.446 L 435.3083 97.5188 L 434.272 96.1369 L 432.2732 97.7162 L 419.7625 96.6304 L 418.5781 98.7032 L 417.0235 98.2097 L 416.5053 102.1578 L 416.1352 99.4928 L 414.5065 99.4928 L 414.2845 102.0591 L 411.5454 102.6514 L 412.2857 105.0203 L 410.5831 107.8827 L 405.8453 109.8567 L 404.8829 108.9684 L 402.5881 111.0412 L 404.2907 113.7062 L 401.3296 114.9893 L 399.4789 118.9375 L 397.184 119.431 L 396.2217 127.8208 L 397.11 129.104 L 398.0724 127.9195 L 398.5906 130.4858 L 396.8879 135.421 L 401.2556 142.2315 L 400.4413 145.6862 L 396.0736 149.6343 L 393.3346 149.5356 L 393.1865 154.2734 L 389.115 157.4319 L 389.5592 160.0969 L 385.7838 161.084 L 381.194 165.3282 L 379.7135 176.7778 L 376.7524 180.726 L 372.7549 193.2614 L 374.4575 195.729 L 371.7925 206.8825 L 379.9356 215.5684 L 380.7499 214.6801 L 383.4889 217.7399 L 383.1928 219.1217 L 391.706 224.9453 L 392.5943 227.3141 L 395.9256 223.2673 L 397.2581 218.5295 L 398.8867 219.9114 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Quezon"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 399.4049 236.1975 L 403.4764 237.5793 L 405.8453 240.5404 L 412.2857 237.8754 L 418.504 230.5714 L 424.1302 230.2753 L 422.5756 225.9323 L 418.8742 227.5116 L 417.1715 222.5764 L 413.9143 223.5634 L 411.8415 222.5764 L 407.9181 225.7349 L 402.7361 219.5166 L 398.8867 219.9114 L 397.036 218.6282 L 395.9256 223.2673 L 392.5943 227.3141 L 399.4049 236.1975 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="San Juan"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 426.2029 355.1354 L 427.3133 345.1664 L 429.016 331.0517 L 433.6797 319.7008 L 436.6408 317.4306 L 436.7149 320.3917 L 440.4163 323.0567 L 446.8567 321.0827 L 449.4477 310.0278 L 451.8906 305.981 L 455.9621 303.316 L 460.1077 307.0667 L 462.5506 305.981 L 459.9596 303.316 L 459.5154 298.2821 L 452.6308 289.8923 L 451.7425 286.1416 L 441.5267 287.5234 L 441.1565 283.674 L 439.2318 283.4766 L 432.6433 291.5703 L 433.4577 292.1625 L 430.5706 292.7547 L 430.3485 294.8275 L 426.6471 295.2223 L 426.7211 297.5912 L 424.2042 300.7497 L 424.7964 303.1186 L 423.5379 303.4147 L 422.4275 307.4616 L 411.0272 316.1475 L 404.8829 310.5214 L 399.775 297.2951 L 397.8503 298.7756 L 408.3622 325.5243 L 410.2129 324.8334 L 415.9871 329.3738 L 416.5053 338.2571 L 414.8027 347.3378 L 414.8767 361.4525 L 423.4639 362.6369 L 426.2029 355.1354 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Taguig"
+                            data-risk="High"
+                            data-cases="1"
+                            />
+                        <path
+                            class="risk-path"
+                            d="M 369.2756 164.2425 L 377.9368 158.0241 L 380.8979 150.424 L 384.0811 148.0551 L 390.5215 152.6941 L 392.1502 150.5227 L 392.0761 145.9823 L 393.1865 144.3043 L 399.849 145.1927 L 401.1815 142.9225 L 397.11 136.408 L 398.5906 130.8806 L 398.0724 127.9195 L 397.11 129.104 L 396.2217 127.8208 L 391.854 127.9195 L 391.854 126.439 L 388.967 126.9325 L 386.376 124.9584 L 386.302 121.3064 L 388.4488 116.5686 L 387.1163 114.101 L 390.8917 113.5088 L 390.5956 110.3503 L 388.1527 110.5477 L 388.1527 108.0801 L 380.4538 103.9345 L 382.3785 101.763 L 387.7825 105.3164 L 392.0761 105.2177 L 392.8164 103.7371 L 390.9657 99.098 L 393.4827 97.7162 L 392.6683 95.6434 L 387.6345 92.0901 L 384.3772 91.8927 L 382.6006 97.124 L 375.2718 101.1708 L 376.6783 118.8388 L 373.7913 121.6025 L 363.6495 121.109 L 360.3182 124.2675 L 359.5779 120.7141 L 361.3546 118.5427 L 358.9857 118.3453 L 358.2454 116.766 L 355.6545 120.6154 L 353.2856 114.4958 L 353.5817 112.0282 L 356.987 111.9295 L 356.987 105.5138 L 352.4713 105.7112 L 346.7711 102.8488 L 343.662 98.111 L 337.2956 102.8488 L 334.1124 103.441 L 333.5202 110.7451 L 334.9267 111.0412 L 338.1099 117.3582 L 341.2931 120.3193 L 340.1827 121.3064 L 342.0333 123.083 L 340.1827 124.1688 L 344.0321 124.761 L 343.4399 127.3273 L 344.9945 127.3273 L 344.9204 125.3532 L 348.8439 124.761 L 346.9192 134.8288 L 349.2881 134.0391 L 351.1388 140.0601 L 350.6206 145.8836 L 352.1011 149.4369 L 352.2492 156.9384 L 355.0622 152.6941 L 359.652 154.1747 L 360.3182 157.3332 L 363.3533 157.8267 L 364.3897 161.5775 L 369.2756 164.2425 Z M 383.711 96.5317 L 383.637 96.7291 L 383.1928 96.7291 L 383.4889 96.433 L 383.711 96.5317 Z"
+                            fill="#bfbfbf" fill-opacity="1" stroke="#000000" stroke-width="0.4" paint-order="fill"
+                            stroke-opacity="1" stroke-dasharray="" stroke-linecap="butt" stroke-linejoin="miter"
+                            stroke-miterlimit="10" clip-path="none" 
+                            data-name="Valenzuela"
+                            data-risk="High"
+                            data-cases="128"
+                            />
+
+
+                    </svg>
+
+                    <div id="map-tooltip"
+                        class="absolute hidden bg-black bg-opacity-80 text-white text-xs rounded py-1 px-2 pointer-events-none z-10">
+                        Loading...
+                    </div>
+
+                    <div
+                        class="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow border border-gray-200 opacity-90">
+                        <h3 class="font-bold mb-2 text-sm">NCR Hotspots</h3>
+                        <div class="flex space-x-4 text-xs">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-emerald-400 rounded-full mr-2"></div>
+                                <span>Low</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
+                                <span>Med</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
+                                <span>High</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-[#dc2626] rounded-full mr-2"></div>
+                                <span>Very High</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Recent Alerts -->
+            <div class="card md:col-span-3">
+                <h2 class="text-xl font-bold mb-4">Recent Outbreak Alerts</h2>
+                <div class="space-y-4">
+                    <div class="flex items-start p-4 border-b">
+                        <div class="risk-high rounded-full w-3 h-3 mt-1 mr-3"></div>
+                        <div>
+                            <h3 class="font-semibold">Quezon City</h3>
+                            <p class="text-gray-600">50 new cases reported this week</p>
+                            <p class="text-sm text-gray-500">2 hours ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-4 border-b">
+                        <div class="risk-medium rounded-full w-3 h-3 mt-1 mr-3"></div>
+                        <div>
+                            <h3 class="font-semibold">Manila</h3>
+                            <p class="text-gray-600">22 new cases reported</p>
+                            <p class="text-sm text-gray-500">5 hours ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Cases Table -->
+            <div class="card md:col-span-3 mt-8">
+                <h2 class="text-xl font-bold mb-4">Cases by City</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cases</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Level</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cases-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Data will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer>
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i data-feather="shield"></i>
+                        <span class="font-bold">DengueWatch NCR</span>
+                    </div>
+                    <p class="text-undefined-300 mt-2">Protecting communities through early detection</p>
+                </div>
+            </div>
+            <div class="border-t border-undefined-700 mt-6 pt-6 text-sm text-center text-undefined-400">
+                © 2025 DengueWatch NCR. All rights reserved.
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+    <script>
+        const riskColors = {
+            Low: '#4ade80',
+            Moderate: '#fbbf24',
+            High: '#f87171',
+            VeryHigh: '#dc2626'
+        };
+
+        document.querySelectorAll('.risk-path').forEach(path => {
+            const cases = Number(path.dataset.cases);
+            let risk;
+
+            if (cases <= 15) {
+            risk = 'Low';
+            } else if (cases <= 35) {
+            risk = 'Moderate';
+            } else if (cases <= 65){
+            risk = 'High';
+            } else {
+            risk = 'VeryHigh'
+            }
+
+            path.dataset.risk = risk;
+            path.style.fill = riskColors[risk];
+        });
+    </script>
+
+</body>
+
+</html>
