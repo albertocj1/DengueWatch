@@ -24,6 +24,9 @@
                 <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
                 <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
                 <a href="admin-panel.html" class="font-semibold hover:text-indigo-300">Admin</a>
+                <a href="#" id="logoutBtn" class="hover:text-indigo-300">Logout</a>
+
+
             </div>
             
             <button class="mobile-menu-button md:hidden">
@@ -40,7 +43,11 @@
                 <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
                 <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
                 <a href="admin-panel.html" class="hover:text-indigo-300">Admin</a>
+                <a href="#" id="logoutBtn" class="hover:text-indigo-300">Logout</a>
+
             </div>
+                
+
         </div>
     </nav>
 
@@ -85,7 +92,6 @@
                         Back to Admin Panel
                     </button>
                 </div>
-
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select City</label>
                     <select id="city-select" class="w-full p-2 border rounded-lg">
@@ -110,7 +116,17 @@
                     </select>
                 </div>
 
-                <div id="alert-form" class="hidden">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                    <select id="risk-level-select" class="w-full p-2 border rounded-lg">
+                        <option value="">-- Select Risk Level --</option>
+                        <option value="Low Risk">Low Risk</option>
+                        <option value="Moderate Risk">Moderate Risk</option>
+                        <option value="High Risk">High Risk</option>
+                        <option value="Very High Risk">Very High Risk</option>
+                    </select>
+                </div>
+<div id="alert-form" class="hidden">
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Recommended Actions</label>
                         <div class="space-y-3">

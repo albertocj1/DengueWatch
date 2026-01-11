@@ -5,14 +5,16 @@ from pydantic import BaseModel, field_validator, create_model
 from typing import List, Dict, Type
 import tensorflow as tf
 import joblib
+from pymongo import MongoClient
+import datetime
 
 # =====================================================
 # 🚀 FASTAPI APP
 # =====================================================
 app = FastAPI(
     title="Dengue Early Warning System API",
-    description="CNN-LSTM based dengue risk forecasting (Next Week) with raw input",
-    version="4.1"
+    description="CNN-LSTM based dengue risk forecasting (Next Week) with raw input & MongoDB storage",
+    version="5.0"
 )
 
 # =====================================================
@@ -85,6 +87,22 @@ except Exception as e:
     raise RuntimeError(f"Failed to load model or scaler: {e}")
 
 # =====================================================
+# 🔌 MONGODB SETUP
+# =====================================================
+client = MongoClient("mongodb://localhost:27017/")  # Change URI if using MongoDB Atlas
+db = client["dengue_db"]
+collection = db["forecasts"]
+
+def save_forecast_to_db(city: str, risk_level: str, forecast_week: str = "Next Week"):
+    doc = {
+        "city": city,
+        "forecast_week": forecast_week,
+        "risk_level": risk_level,
+        "created_at": datetime.datetime.utcnow()
+    }
+    collection.insert_one(doc)
+
+# =====================================================
 # 📌 Pydantic Models
 # =====================================================
 feature_fields: Dict[str, Type] = {col: float for col in final_feature_columns}
@@ -106,7 +124,7 @@ class DengueForecastOutput(BaseModel):
     risk_level: str
 
 # =====================================================
-# 🔧 PREPROCESSING (raw → scaled)
+# 🔧 PREPROCESSING (raw → scaled, city detection)
 # =====================================================
 def preprocess_input(data: DengueForecastInput):
     try:
@@ -121,7 +139,7 @@ def preprocess_input(data: DengueForecastInput):
         # Scale using the saved scaler
         scaled = scaler.transform(df)
 
-        # Reshape for CNN-LSTM: (batch_size=1, time_steps=WINDOW, features)
+        # Reshape for CNN-LSTM
         X = scaled.reshape(1, WINDOW, len(final_feature_columns))
 
         return X, city
@@ -138,6 +156,9 @@ async def forecast_next_week(input_data: DengueForecastInput):
         predictions = model.predict(X)
         predicted_index = int(np.argmax(predictions[0]))
         predicted_risk = risk_labels[predicted_index]
+
+        # Save to MongoDB
+        save_forecast_to_db(city=city, risk_level=predicted_risk)
 
         return DengueForecastOutput(
             city=city,
@@ -157,6 +178,7 @@ async def health():
         "model_loaded": True,
         "window_size": WINDOW,
         "num_features": len(final_feature_columns),
-        "input_scaled": False,  # raw input is accepted
-        "city_detected_from_land_area": True
+        "input_scaled": False,
+        "city_detected_from_land_area": True,
+        "mongodb_connected": True
     }

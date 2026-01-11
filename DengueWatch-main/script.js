@@ -32,10 +32,27 @@ function closeMobileMenuOnOutsideClick(event) {
         mobileMenu.classList.remove('flex');
     }
 }
+// Check authentication on all pages except login
+if (!window.location.pathname.includes('login.html') && !sessionStorage.getItem('authenticated')) {
+    window.location.href = 'login.html';
+}
+// logout functionality
+document.getElementById('logoutBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    // Clear auth data
+    localStorage.removeItem('user');
+    localStorage.removeItem('token'); // if you use one
+    sessionStorage.clear(); // optional
+
+    // Redirect to login
+    window.location.href = 'login.html';
+});
+
 
 // Main initialization function
 async function initializeApp() {
-    // Load required scripts based on current page
+// Load required scripts based on current page
     await Promise.all([
         loadScript('https://cdn.jsdelivr.net/npm/chart.js'),
         loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js'),
