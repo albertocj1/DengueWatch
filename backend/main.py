@@ -7,14 +7,29 @@ import tensorflow as tf
 import joblib
 from pymongo import MongoClient
 import datetime
-
+from fastapi.middleware.cors import CORSMiddleware
 # =====================================================
 # 🚀 FASTAPI APP
 # =====================================================
 app = FastAPI(
     title="Dengue Early Warning System API",
-    description="CNN-LSTM based dengue risk forecasting (Next Week) with raw input & MongoDB storage",
-    version="5.0"
+    description="CNN-LSTM dengue risk forecasting with MongoDB integration",
+    version="5.1"
+)
+
+origins = [
+    "http://127.0.0.1:5500",  # your Live Server address
+    "http://localhost:5500",  # optional, in case Live Server uses localhost
+    "http://localhost:8000",  # optional, for API testing
+    "http://127.0.0.1:3000",  # Live Preview
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # or ["*"] for all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # =====================================================
@@ -52,10 +67,10 @@ final_feature_columns = [
 # =====================================================
 # 🚨 RISK LABELS
 # =====================================================
-risk_labels = ["Low", "Moderate", "High", "Very High"]
+risk_labels = ["Low", "Moderate", "High", "VeryHigh"]
 
 # =====================================================
-# 🌆 CITY MAPPING BY LAND AREA
+# 🌆 CITY MAPPING (PRIMARY KEY = LAND AREA)
 # =====================================================
 land_area_to_city = {
     24.98: "MANILA CITY",
@@ -89,21 +104,21 @@ except Exception as e:
 # =====================================================
 # 🔌 MONGODB SETUP
 # =====================================================
-client = MongoClient("mongodb://localhost:27017/")  # Change URI if using MongoDB Atlas
+client = MongoClient("mongodb://localhost:27017/")  # replace with your URI
 db = client["dengue_db"]
 collection = db["forecasts"]
 
-def save_forecast_to_db(city: str, risk_level: str, forecast_week: str = "Next Week"):
+def save_forecast_to_db(city: str, risk_level: str):
     doc = {
         "city": city,
-        "forecast_week": forecast_week,
         "risk_level": risk_level,
+        "forecast_week": "Next Week",
         "created_at": datetime.datetime.utcnow()
     }
     collection.insert_one(doc)
 
 # =====================================================
-# 📌 Pydantic Models
+# 📌 PYDANTIC MODELS
 # =====================================================
 feature_fields: Dict[str, Type] = {col: float for col in final_feature_columns}
 FeatureInput = create_model("FeatureInput", **feature_fields)
@@ -123,23 +138,21 @@ class DengueForecastOutput(BaseModel):
     forecast_week: str
     risk_level: str
 
+class CityRequest(BaseModel):
+    city: str
+
 # =====================================================
-# 🔧 PREPROCESSING (raw → scaled, city detection)
+# 🔧 PREPROCESSING
 # =====================================================
 def preprocess_input(data: DengueForecastInput):
     try:
-        # Convert list of FeatureInput to DataFrame
         records = [step.model_dump() for step in data.features]
         df = pd.DataFrame(records, columns=final_feature_columns)
 
-        # Get city from LAND AREA
         land_area = round(df["LAND AREA"].iloc[0], 2)
         city = land_area_to_city.get(land_area, "Unknown City")
 
-        # Scale using the saved scaler
         scaled = scaler.transform(df)
-
-        # Reshape for CNN-LSTM
         X = scaled.reshape(1, WINDOW, len(final_feature_columns))
 
         return X, city
@@ -153,20 +166,64 @@ def preprocess_input(data: DengueForecastInput):
 async def forecast_next_week(input_data: DengueForecastInput):
     try:
         X, city = preprocess_input(input_data)
-        predictions = model.predict(X)
-        predicted_index = int(np.argmax(predictions[0]))
-        predicted_risk = risk_labels[predicted_index]
+        preds = model.predict(X)
+        risk = risk_labels[int(np.argmax(preds[0]))]
 
-        # Save to MongoDB
-        save_forecast_to_db(city=city, risk_level=predicted_risk)
+        save_forecast_to_db(city, risk)
 
         return DengueForecastOutput(
             city=city,
             forecast_week="Next Week",
-            risk_level=predicted_risk
+            risk_level=risk
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# =====================================================
+# 🗺️ FETCH LATEST FORECAST FOR ALL CITIES
+# =====================================================
+@app.get("/api/latest-forecast")
+async def get_latest_forecast_per_city():
+    """
+    Returns the latest risk level for all cities.
+    """
+    try:
+        pipeline = [
+            {"$sort": {"created_at": -1}},
+            {"$group": {
+                "_id": "$city",
+                "city": {"$first": "$city"},
+                "risk_level": {"$first": "$risk_level"},
+                "forecast_week": {"$first": "$forecast_week"},
+                "created_at": {"$first": "$created_at"}
+            }},
+            {"$project": {"_id": 0}}
+        ]
+        return list(collection.aggregate(pipeline))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# =====================================================
+# 🏙️ FETCH LATEST FORECAST FOR A SINGLE CITY
+# =====================================================
+@app.post("/get-risk-level")
+async def get_risk_level(request: CityRequest):
+    """
+    Fetch the latest dengue risk level for a specific city.
+    """
+    city_name = request.city.strip().upper()
+    doc = collection.find_one(
+        {"city": city_name},
+        sort=[("created_at", -1)]
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"No data found for city: {city_name}")
+    
+    return {
+        "city": city_name,
+        "risk_level": doc.get("risk_level", "Unknown"),
+        "forecast_week": doc.get("forecast_week", "Unknown")
+    }
 
 # =====================================================
 # ❤️ HEALTH CHECK
@@ -176,9 +233,8 @@ async def health():
     return {
         "status": "OK",
         "model_loaded": True,
+        "mongodb_connected": True,
         "window_size": WINDOW,
         "num_features": len(final_feature_columns),
-        "input_scaled": False,
-        "city_detected_from_land_area": True,
-        "mongodb_connected": True
+        "city_detected_from_land_area": True
     }

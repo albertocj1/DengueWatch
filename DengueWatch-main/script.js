@@ -356,15 +356,13 @@ async function initializeApp() {
                 ncrMap.appendChild(path);
 
                 // Card content (uses SVG data attributes)
-                const name = path.getAttribute('data-name') || 'Unknown Area';
-                const risk = path.getAttribute('data-risk') || 'Low';
-                const cases = path.getAttribute('data-cases') || 'N/A';
+                const name = path.getAttribute('city') || 'Unknown Area';
+                const risk = path.getAttribute('risk_level') || 'Low';
 
                 mapCard.innerHTML = `
                     <div style="font-weight:600;">${name}</div>
                     <div style="font-size:12px; margin-top:4px;">
                         Risk Level: <strong>${risk}</strong><br>
-                        Cases: ${cases}
                     </div>
                 `;
 
