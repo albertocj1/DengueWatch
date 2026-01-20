@@ -1,13 +1,23 @@
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, field_validator, create_model
 from typing import List, Dict, Type
 import tensorflow as tf
 import joblib
+import types, sys, datetime
+
+# Fake tz_util to avoid the import error
+if 'bson.tz_util' not in sys.modules:
+    tz_util = types.SimpleNamespace(utc=datetime.timezone.utc)
+    sys.modules['bson.tz_util'] = tz_util
+
 from pymongo import MongoClient
+from bson import Binary
 import datetime
 from fastapi.middleware.cors import CORSMiddleware
+import io
+
 # =====================================================
 # 🚀 FASTAPI APP
 # =====================================================
@@ -107,6 +117,11 @@ except Exception as e:
 client = MongoClient("mongodb://localhost:27017/")  # replace with your URI
 db = client["dengue_db"]
 collection = db["forecasts"]
+# =====================================================
+# 🚨 ALERT RECOMMENDATIONS COLLECTION
+# =====================================================
+alerts_collection = db["alert_recommendations"]
+
 
 def save_forecast_to_db(city: str, risk_level: str):
     doc = {
@@ -140,6 +155,19 @@ class DengueForecastOutput(BaseModel):
 
 class CityRequest(BaseModel):
     city: str
+
+class AlertResponse(BaseModel):
+    city: str
+    risk_level: str
+    risk_assessment: str
+    actions: List[str]
+
+class AlertRequest(BaseModel):
+    city: str
+    risk_level: str
+    risk_assessment: str
+    actions: List[str]
+
 
 # =====================================================
 # 🔧 PREPROCESSING
@@ -202,6 +230,32 @@ async def get_latest_forecast_per_city():
         return list(collection.aggregate(pipeline))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    # =====================================================
+# 🚨 FETCH ALERT DETAILS (USED BY FRONTEND MODAL)
+# =====================================================
+@app.get("/alerts", response_model=AlertResponse)
+async def get_alert(city: str, risk_level: str):
+    """
+    Fetch alert recommendations based on city and risk level.
+    Used by the frontend alert modal.
+    """
+    doc = alerts_collection.find_one(
+        {
+            "city": city.strip().upper(),
+            "risk_level": risk_level
+        },
+        {"_id": 0}
+    )
+
+    if not doc:
+        raise HTTPException(
+            status_code=404,
+            detail="No alert recommendations found."
+        )
+
+    return doc
+
 
 # =====================================================
 # 🏙️ FETCH LATEST FORECAST FOR A SINGLE CITY
@@ -238,3 +292,202 @@ async def health():
         "num_features": len(final_feature_columns),
         "city_detected_from_land_area": True
     }
+
+from fastapi.responses import JSONResponse
+
+@app.post("/alerts", response_model=AlertResponse)
+async def save_alert(alert: AlertRequest):
+    """
+    Save or update alert recommendations for a city and risk level.
+    """
+    try:
+        city_name = alert.city.strip().upper()
+        risk_level = alert.risk_level.strip()
+
+        # Check if an alert already exists
+        existing = alerts_collection.find_one({"city": city_name, "risk_level": risk_level})
+
+        doc = {
+            "city": city_name,
+            "risk_level": risk_level,
+            "risk_assessment": alert.risk_assessment,
+            "actions": alert.actions,
+            "created_at": datetime.datetime.utcnow()
+        }
+
+        if existing:
+            alerts_collection.update_one({"_id": existing["_id"]}, {"$set": doc})
+        else:
+            alerts_collection.insert_one(doc)
+
+        return doc  # FastAPI will use AlertResponse for validation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save alert: {e}")
+
+
+# =====================================================
+# CSV Preprocessing + Recursive Forecasting + Save CSV
+# =====================================================
+from fastapi import UploadFile, File
+from bson import Binary
+
+@app.post("/preprocessing")
+async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
+    """
+    Accepts a raw CSV file containing multiple cities,
+    saves the CSV in MongoDB,
+    preprocesses each city independently,
+    and returns recursive forecasts for up to `weeks_ahead` weeks.
+    Default is 4 weeks, max is 8 weeks.
+    """
+    try:
+        # Cap weeks ahead at 8
+        weeks_ahead = min(weeks_ahead, 8)
+
+        # -------------------------------
+        # Read CSV
+        # -------------------------------
+        contents = await file.read()
+        df = pd.read_csv(io.BytesIO(contents))
+
+        # -------------------------------
+        # Save raw CSV in MongoDB
+        # -------------------------------
+        db["raw_csv_uploads"].insert_one({
+            "filename": file.filename,
+            "uploaded_at": datetime.datetime.utcnow(),
+            "cities": list(df["LAND AREA"].unique()),
+            "data": Binary(contents)
+        })
+
+        # -------------------------------
+        # Required columns (raw)
+        # -------------------------------
+        required_cols = [
+            "YEAR", "MONTH", "DAY",
+            "RAINFALL", "TMAX", "TMIN", "TMEAN",
+            "RH", "SUNSHINE",
+            "CASES", "POPULATION", "LAND AREA"
+        ]
+        missing = set(required_cols) - set(df.columns)
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required columns: {missing}"
+            )
+
+        # -------------------------------
+        # Sort by date globally
+        # -------------------------------
+        df["DATE"] = pd.to_datetime(df[["YEAR", "MONTH", "DAY"]])
+        df = df.sort_values("DATE")
+
+        results = []
+
+        # -------------------------------
+        # Process per city
+        # -------------------------------
+        for land_area, city_df in df.groupby("LAND AREA"):
+            city_df = city_df.sort_values("DATE").reset_index(drop=True)
+
+            # Incidence per 100k
+            city_df["CASES"] = (city_df["CASES"] / city_df["POPULATION"]) * 100000
+
+            # Forecast container for recursive steps
+            city_forecasts = []
+
+            # Copy for recursive predictions
+            temp_df = city_df.copy()
+
+            for week in range(1, weeks_ahead + 1):
+                # -------------------------------
+                # Lag features
+                # -------------------------------
+                for lag in range(1, WINDOW + 1):
+                    temp_df[f"CASES_lag{lag}"] = temp_df["CASES"].shift(lag)
+                    temp_df[f"RAINFALL_lag{lag}"] = temp_df["RAINFALL"].shift(lag)
+                    temp_df[f"TMAX_lag{lag}"] = temp_df["TMAX"].shift(lag)
+                    temp_df[f"TMIN_lag{lag}"] = temp_df["TMIN"].shift(lag)
+                    temp_df[f"TMEAN_lag{lag}"] = temp_df["TMEAN"].shift(lag)
+                    temp_df[f"RH_lag{lag}"] = temp_df["RH"].shift(lag)
+                    temp_df[f"SUNSHINE_lag{lag}"] = temp_df["SUNSHINE"].shift(lag)
+
+                # -------------------------------
+                # Rolling features
+                # -------------------------------
+                temp_df["CASES_roll2_mean"] = temp_df["CASES"].rolling(2).mean()
+                temp_df["CASES_roll4_mean"] = temp_df["CASES"].rolling(4).mean()
+                temp_df["CASES_roll2_sum"] = temp_df["CASES"].rolling(2).sum()
+                temp_df["CASES_roll4_sum"] = temp_df["CASES"].rolling(4).sum()
+
+                temp_df["RAINFALL_roll2_mean"] = temp_df["RAINFALL"].rolling(2).mean()
+                temp_df["RAINFALL_roll4_mean"] = temp_df["RAINFALL"].rolling(4).mean()
+                temp_df["RAINFALL_roll2_sum"] = temp_df["RAINFALL"].rolling(2).sum()
+                temp_df["RAINFALL_roll4_sum"] = temp_df["RAINFALL"].rolling(4).sum()
+
+                temp_df["TMEAN_roll2_mean"] = temp_df["TMEAN"].rolling(2).mean()
+                temp_df["TMEAN_roll4_mean"] = temp_df["TMEAN"].rolling(4).mean()
+                temp_df["TMEAN_roll2_sum"] = temp_df["TMEAN"].rolling(2).sum()
+                temp_df["TMEAN_roll4_sum"] = temp_df["TMEAN"].rolling(4).sum()
+
+                temp_df["RH_roll2_mean"] = temp_df["RH"].rolling(2).mean()
+                temp_df["RH_roll4_mean"] = temp_df["RH"].rolling(4).mean()
+                temp_df["RH_roll2_sum"] = temp_df["RH"].rolling(2).sum()
+                temp_df["RH_roll4_sum"] = temp_df["RH"].rolling(4).sum()
+
+                # Drop NaNs
+                temp_df_clean = temp_df.dropna().reset_index(drop=True)
+                if len(temp_df_clean) < WINDOW:
+                    break
+
+                # -------------------------------
+                # Extract last WINDOW and predict
+                # -------------------------------
+                window_df = temp_df_clean.iloc[-WINDOW:][final_feature_columns]
+                scaled = scaler.transform(window_df)
+                X = scaled.reshape(1, WINDOW, len(final_feature_columns))
+                preds = model.predict(X)
+                risk = risk_labels[int(np.argmax(preds[0]))]
+
+                # Forecast date = last date + 7 days
+                last_date = temp_df["DATE"].iloc[-1]
+                forecast_date = last_date + pd.Timedelta(days=7)
+
+                city_name = land_area_to_city.get(round(land_area, 2), "Unknown City")
+                city_forecasts.append({
+                    "city": city_name,
+                    "week": week,
+                    "forecast_date": forecast_date.strftime("%Y-%m-%d"),
+                    "risk_level": risk
+                })
+
+                # Append placeholder row for next week
+                new_row = temp_df.iloc[-1:].copy()
+                new_row["DATE"] = forecast_date
+                new_row["CASES"] = (100000 / new_row["POPULATION"].values[0]) * 0
+                temp_df = pd.concat([temp_df, new_row], ignore_index=True)
+
+            results.extend(city_forecasts)
+
+        if not results:
+            raise HTTPException(
+                status_code=400,
+                detail="No city had sufficient data for forecasting."
+            )
+
+        return {
+            "status": "OK",
+            "num_cities": len(set(r["city"] for r in results)),
+            "weeks_forecasted": weeks_ahead,
+            "forecasts": results
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"CSV preprocessing failed: {e}"
+        )
+    
+    

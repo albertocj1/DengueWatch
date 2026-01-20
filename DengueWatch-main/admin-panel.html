@@ -25,8 +25,6 @@
                 <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
                 <a href="admin-panel.html" class="font-semibold hover:text-indigo-300">Admin</a>
                 <a href="#" id="logoutBtn" class="hover:text-indigo-300">Logout</a>
-
-
             </div>
             
             <button class="mobile-menu-button md:hidden">
@@ -34,8 +32,6 @@
             </button>
         </div>
 
-
-<main class="flex-grow flex items-center justify-center">
         <!-- Mobile Menu -->
         <div class="mobile-menu hidden md:hidden bg-blue-700 w-full absolute top-full left-0 z-50">
             <div class="container mx-auto px-4 py-3 flex flex-col space-y-4">
@@ -44,10 +40,7 @@
                 <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
                 <a href="admin-panel.html" class="hover:text-indigo-300">Admin</a>
                 <a href="#" id="logoutBtn" class="hover:text-indigo-300">Logout</a>
-
             </div>
-                
-
         </div>
     </nav>
 
@@ -95,60 +88,43 @@
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select City</label>
                     <select id="city-select" class="w-full p-2 border rounded-lg">
-                        <option value="">-- Select a City --</option>
-                        <option value="Manila">Manila</option>
-                        <option value="Quezon City">Quezon City</option>
-                        <option value="Caloocan">Caloocan</option>
-                        <option value="Las Piñas">Las Piñas</option>
-                        <option value="Makati">Makati</option>
-                        <option value="Malabon">Malabon</option>
-                        <option value="Mandaluyong">Mandaluyong</option>
-                        <option value="Marikina">Marikina</option>
-                        <option value="Muntinlupa">Muntinlupa</option>
-                        <option value="Navotas">Navotas</option>
-                        <option value="Parañaque">Parañaque</option>
-                        <option value="Pasay">Pasay</option>
-                        <option value="Pasig">Pasig</option>
-                        <option value="San Juan">San Juan</option>
-                        <option value="Taguig">Taguig</option>
-                        <option value="Valenzuela">Valenzuela</option>
-                        <option value="Pateros">Pateros</option>
-                    </select>
+                    <option value="">-- Select a City --</option>
+                    <option value="MANILA CITY">Manila City</option>
+                    <option value="QUEZON CITY">Quezon City</option>
+                    <option value="CALOOCAN CITY">Caloocan City</option>
+                    <option value="LAS PINAS CITY">Las Pinas</option>
+                    <option value="MAKATI CITY">Makati City</option>
+                    <option value="MALABON CITY">Malabon City</option>
+                    <option value="MANDALUYONG CITY">Mandaluyong City</option>
+                    <option value="MARIKINA CITY">Marikina City</option>
+                    <option value="MUNTINLUPA CITY">Muntinlupa City</option>
+                    <option value="NAVOTAS CITY">Navotas City</option>
+                    <option value="PARANAQUE CITY">Paranaque City</option>
+                    <option value="PASAY CITY">Pasay City</option>
+                    <option value="PASIG CITY">Pasig City</option>
+                    <option value="SAN JUAN CITY">San Juan City</option>
+                    <option value="TAGUIG CITY">Taguig</option>
+                    <option value="VALENZUELA CITY">Valenzuela City</option>
+                    <option value="PATEROS">Pateros</option>
+                </select>
+
                 </div>
 
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
                     <select id="risk-level-select" class="w-full p-2 border rounded-lg">
                         <option value="">-- Select Risk Level --</option>
-                        <option value="Low Risk">Low Risk</option>
-                        <option value="Moderate Risk">Moderate Risk</option>
-                        <option value="High Risk">High Risk</option>
-                        <option value="Very High Risk">Very High Risk</option>
+                        <option value="Low">Low Risk</option>
+                        <option value="Moderate">Moderate Risk</option>
+                        <option value="High">High Risk</option>
+                        <option value="VeryHigh">Very High Risk</option>
                     </select>
                 </div>
-<div id="alert-form" class="hidden">
+
+                <div id="alert-form" class="hidden">
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Recommended Actions</label>
-                        <div class="space-y-3">
-                            <div class="flex items-start">
-                                <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action 1" value="Conduct immediate fogging operations">
-                                <button class="remove-action-btn text-red-600 hover:text-red-700">
-                                    <i data-feather="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                            <div class="flex items-start">
-                                <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action 2" value="Deploy additional medical teams">
-                                <button class="remove-action-btn text-red-600 hover:text-red-700">
-                                    <i data-feather="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                            <div class="flex items-start">
-                                <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action 3" value="Issue public health advisory">
-                                <button class="remove-action-btn text-red-600 hover:text-red-700">
-                                    <i data-feather="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
+                        <div class="space-y-3"></div>
                         <button id="add-action-btn" class="mt-3 text-blue-600 hover:text-blue-700 flex items-center text-sm">
                             <i data-feather="plus" class="w-4 h-4 mr-1"></i>
                             Add another action
@@ -157,7 +133,7 @@
 
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Risk Assessment Text</label>
-                        <textarea id="risk-assessment-text" class="w-full p-2 border rounded-lg h-24">This area has exceeded the epidemic threshold with a rapid increase in cases.</textarea>
+                        <textarea id="risk-assessment-text" class="w-full p-2 border rounded-lg h-24"></textarea>
                     </div>
 
                     <div class="flex justify-end">
@@ -170,135 +146,176 @@
         </div>
     </div>
 </main>
-    <!-- Footer -->
-    <footer class="bg-blue-800 text-white py-8">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <div class="flex items-center space-x-2">
-                        <i data-feather="shield"></i>
-                        <span class="font-bold">DengueWatch NCR</span>
-                    </div>
-                    <p class="text-blue-300 mt-2">Administrative portal for data management</p>
+
+<footer class="bg-blue-800 text-white py-8">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center space-x-2">
+                    <i data-feather="shield"></i>
+                    <span class="font-bold">DengueWatch NCR</span>
                 </div>
-            </div>
-            <div class="border-t border-blue-700 mt-6 pt-6 text-sm text-center text-blue-400">
-                © 2025 DengueWatch NCR. Restricted access.
+                <p class="text-blue-300 mt-2">Administrative portal for data management</p>
             </div>
         </div>
-    </footer>
-
-    <!-- Success Modal -->
-    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full">
-            <div class="text-center">
-                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i data-feather="check" class="w-8 h-8 text-green-600"></i>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Changes Saved</h3>
-                <p class="text-gray-600 mb-6">The alert recommendations have been updated successfully.</p>
-                <button id="close-success-modal" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">
-                    OK
-                </button>
-            </div>
+        <div class="border-t border-blue-700 mt-6 pt-6 text-sm text-center text-blue-400">
+            © 2025 DengueWatch NCR. Restricted access.
         </div>
     </div>
+</footer>
 
-    <script src="script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+<!-- Success Modal -->
+<div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-6 max-w-md w-full">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-feather="check" class="w-8 h-8 text-green-600"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Changes Saved</h3>
+            <p class="text-gray-600 mb-6">The alert recommendations have been updated successfully.</p>
+            <button id="close-success-modal" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+
+    const updateAlertsBtn = document.getElementById('update-alerts-btn');
+    const backToMainBtn = document.getElementById('back-to-main');
+    const alertsManagement = document.getElementById('alerts-management');
+    const adminPanel = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2');
+
+    const citySelect = document.getElementById('city-select');
+    const riskSelect = document.getElementById('risk-level-select');
+    const alertForm = document.getElementById('alert-form');
+    const actionsContainer = alertForm.querySelector('.space-y-3');
+    const assessmentTextarea = document.getElementById('risk-assessment-text');
+
+    const saveAlertBtn = document.getElementById('save-alert-btn');
+    const successModal = document.getElementById('success-modal');
+    const closeSuccessModal = document.getElementById('close-success-modal');
+
+    updateAlertsBtn.addEventListener('click', () => {
+        adminPanel.classList.add('hidden');
+        alertsManagement.classList.remove('hidden');
+    });
+
+    backToMainBtn.addEventListener('click', () => {
+        adminPanel.classList.remove('hidden');
+        alertsManagement.classList.add('hidden');
+    });
+
+    function clearForm() {
+        actionsContainer.innerHTML = '';
+        assessmentTextarea.value = '';
+    }
+
+    function createActionInput(value = '') {
+        const div = document.createElement('div');
+        div.className = 'flex items-start';
+        div.innerHTML = `
+            <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" value="${value}" placeholder="Action">
+            <button class="remove-action-btn text-red-600 hover:text-red-700">
+                <i data-feather="trash-2" class="w-4 h-4"></i>
+            </button>
+        `;
+        // Remove button listener
+        div.querySelector('.remove-action-btn').addEventListener('click', () => div.remove());
+        return div;
+    }
+
+    async function loadAlert(city, risk) {
+        if (!city || !risk) return;
+        try {
+            const res = await fetch(`/alerts?city=${encodeURIComponent(city)}&risk_level=${encodeURIComponent(risk)}`);
+            if (!res.ok) throw new Error('No alert found');
+            const data = await res.json();
+
+            clearForm();
+            // Populate actions
+            data.actions.forEach(act => actionsContainer.appendChild(createActionInput(act)));
+            // Populate risk assessment
+            assessmentTextarea.value = data.risk_assessment;
+            alertForm.classList.remove('hidden');
             feather.replace();
+        } catch(err) {
+            clearForm();
+            alertForm.classList.remove('hidden');
+        }
+    }
 
-            // Toggle between admin panel and alerts management
-            const updateAlertsBtn = document.getElementById('update-alerts-btn');
-            const backToMainBtn = document.getElementById('back-to-main');
-            const alertsManagement = document.getElementById('alerts-management');
-            const adminPanel = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2');
+    citySelect.addEventListener('change', () => {
+        const city = citySelect.value;
+        const risk = riskSelect.value;
+        if (city && risk) loadAlert(city, risk);
+        else alertForm.classList.add('hidden');
+    });
 
-            updateAlertsBtn.addEventListener('click', function() {
-                adminPanel.classList.add('hidden');
-                alertsManagement.classList.remove('hidden');
+    riskSelect.addEventListener('change', () => {
+        const city = citySelect.value;
+        const risk = riskSelect.value;
+        if (city && risk) loadAlert(city, risk);
+        else alertForm.classList.add('hidden');
+    });
+
+    // Add another action
+    const addActionBtn = document.getElementById('add-action-btn');
+    addActionBtn.addEventListener('click', () => {
+        actionsContainer.appendChild(createActionInput());
+        feather.replace();
+    });
+
+    // Save changes
+    saveAlertBtn.addEventListener('click', async () => {
+        const city = citySelect.value;
+        const risk = riskSelect.value;
+        const actions = Array.from(actionsContainer.querySelectorAll('.alert-action')).map(i => i.value);
+        const riskAssessment = assessmentTextarea.value;
+
+        if (!city || !risk) {
+            alert('Please select a city and risk level.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/alerts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    city: city,
+                    risk_level: risk,
+                    actions: actions,
+                    risk_assessment: riskAssessment
+                })
             });
+            if (!res.ok) throw new Error('Failed to save alert');
 
-            backToMainBtn.addEventListener('click', function() {
-                adminPanel.classList.remove('hidden');
-                alertsManagement.classList.add('hidden');
-            });
+            // Show success modal
+            successModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        } catch(err) {
+            alert('Error saving alert: ' + err.message);
+        }
+    });
 
-            // City select handler
-            const citySelect = document.getElementById('city-select');
-            const alertForm = document.getElementById('alert-form');
+    closeSuccessModal.addEventListener('click', () => {
+        successModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    });
 
-            citySelect.addEventListener('change', function() {
-                if (this.value) {
-                    // In a real app, you would fetch the existing recommendations for this city
-                    alertForm.classList.remove('hidden');
-                } else {
-                    alertForm.classList.add('hidden');
-                }
-            });
+    successModal.addEventListener('click', e => {
+        if (e.target === successModal) {
+            successModal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    });
+});
+</script>
 
-            // Add new action
-            const addActionBtn = document.getElementById('add-action-btn');
-            const actionsContainer = document.querySelector('.space-y-3');
-
-            addActionBtn.addEventListener('click', function() {
-                const newActionDiv = document.createElement('div');
-                newActionDiv.className = 'flex items-start';
-                newActionDiv.innerHTML = `
-                    <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="New action">
-                    <button class="remove-action-btn text-red-600 hover:text-red-700">
-                        <i data-feather="trash-2" class="w-4 h-4"></i>
-                    </button>
-                `;
-                actionsContainer.appendChild(newActionDiv);
-                feather.replace();
-                
-                // Add event to new remove button
-                newActionDiv.querySelector('.remove-action-btn').addEventListener('click', function() {
-                    newActionDiv.remove();
-                });
-            });
-
-            // Remove action
-            document.querySelectorAll('.remove-action-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    this.parentElement.remove();
-                });
-            });
-
-            // Save changes
-            const saveAlertBtn = document.getElementById('save-alert-btn');
-            const successModal = document.getElementById('success-modal');
-            const closeSuccessModal = document.getElementById('close-success-modal');
-
-            saveAlertBtn.addEventListener('click', function() {
-                const city = citySelect.value;
-                const actions = Array.from(document.querySelectorAll('.alert-action')).map(input => input.value);
-                const assessment = document.getElementById('risk-assessment-text').value;
-
-                // In a real app, you would save this to your database/API
-                console.log('Saving for city:', city);
-                console.log('Actions:', actions);
-                console.log('Assessment:', assessment);
-
-                // Show success modal
-                successModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            });
-
-            closeSuccessModal.addEventListener('click', function() {
-                successModal.classList.add('hidden');
-                document.body.style.overflow = 'auto';
-            });
-
-            successModal.addEventListener('click', function(e) {
-                if (e.target === successModal) {
-                    successModal.classList.add('hidden');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        });
-    </script>
 </body>
 </html>
