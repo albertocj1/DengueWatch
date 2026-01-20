@@ -191,130 +191,148 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminPanel = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2');
 
     const citySelect = document.getElementById('city-select');
-    const riskSelect = document.getElementById('risk-level-select');
+    
+    const riskLevelSelect = document.getElementById('risk-level-select');
     const alertForm = document.getElementById('alert-form');
-    const actionsContainer = alertForm.querySelector('.space-y-3');
-    const assessmentTextarea = document.getElementById('risk-assessment-text');
+    const actionsContainer = document.querySelector('.space-y-3');
 
+    const addActionBtn = document.getElementById('add-action-btn');
     const saveAlertBtn = document.getElementById('save-alert-btn');
     const successModal = document.getElementById('success-modal');
     const closeSuccessModal = document.getElementById('close-success-modal');
 
-    updateAlertsBtn.addEventListener('click', () => {
+    // Toggle admin panel / alerts management
+    updateAlertsBtn.addEventListener('click', function() {
         adminPanel.classList.add('hidden');
         alertsManagement.classList.remove('hidden');
     });
-
-    backToMainBtn.addEventListener('click', () => {
+    backToMainBtn.addEventListener('click', function() {
         adminPanel.classList.remove('hidden');
         alertsManagement.classList.add('hidden');
     });
 
-    function clearForm() {
-        actionsContainer.innerHTML = '';
-        assessmentTextarea.value = '';
+    // Show alert form only when both city and risk level are selected
+    function toggleAlertForm() {
+        if (citySelect.value && riskLevelSelect.value) {
+            alertForm.classList.remove('hidden');
+            fetchAlertData();
+        } else {
+            alertForm.classList.add('hidden');
+        }
     }
 
-    function createActionInput(value = '') {
+    citySelect.addEventListener('change', toggleAlertForm);
+    // Clear actions and risk assessment when city changes
+    citySelect.addEventListener('change', () => {
+    // Clear all action inputs
+    actionsContainer.innerHTML = '';
+    addActionBtn.click(); // add default empty action input
+
+    // Clear risk assessment textbox
+    document.getElementById('risk-assessment-text').value = '';
+});
+
+    riskLevelSelect.addEventListener('change', toggleAlertForm);
+
+    // Fetch existing alert recommendations
+    async function fetchAlertData() {
+        try {
+            const city = citySelect.value;
+            const risk = riskLevelSelect.value;
+            const res = await fetch(`http://127.0.0.1:8000/alerts?city=${city}&risk_level=${risk}`);
+            if (!res.ok) throw new Error('No existing alert');
+            const data = await res.json();
+
+            // Clear existing inputs
+            actionsContainer.innerHTML = '';
+            data.actions.forEach((act, i) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-start';
+                div.innerHTML = `
+                    <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="Action ${i+1}" value="${act}">
+                    <button class="remove-action-btn text-red-600 hover:text-red-700">
+                        <i data-feather="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                actionsContainer.appendChild(div);
+
+                div.querySelector('.remove-action-btn').addEventListener('click', () => div.remove());
+            });
+
+            // Prefill risk assessment
+            document.getElementById('risk-assessment-text').value = data.risk_assessment;
+            feather.replace();
+
+        } catch (err) {
+            // No existing alert; show defaults
+            console.log('No existing alert:', err);
+            if (actionsContainer.children.length === 0) {
+                addActionBtn.click(); // add default empty action
+            }
+            document.getElementById('risk-assessment-text').value = '';
+        }
+    }
+
+    // Add new action
+    addActionBtn.addEventListener('click', function() {
         const div = document.createElement('div');
         div.className = 'flex items-start';
         div.innerHTML = `
-            <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" value="${value}" placeholder="Action">
+            <input type="text" class="flex-1 p-2 border rounded-lg mr-2 alert-action" placeholder="New action">
             <button class="remove-action-btn text-red-600 hover:text-red-700">
                 <i data-feather="trash-2" class="w-4 h-4"></i>
             </button>
         `;
-        // Remove button listener
-        div.querySelector('.remove-action-btn').addEventListener('click', () => div.remove());
-        return div;
-    }
-
-    async function loadAlert(city, risk) {
-        if (!city || !risk) return;
-        try {
-            const res = await fetch(`/alerts?city=${encodeURIComponent(city)}&risk_level=${encodeURIComponent(risk)}`);
-            if (!res.ok) throw new Error('No alert found');
-            const data = await res.json();
-
-            clearForm();
-            // Populate actions
-            data.actions.forEach(act => actionsContainer.appendChild(createActionInput(act)));
-            // Populate risk assessment
-            assessmentTextarea.value = data.risk_assessment;
-            alertForm.classList.remove('hidden');
-            feather.replace();
-        } catch(err) {
-            clearForm();
-            alertForm.classList.remove('hidden');
-        }
-    }
-
-    citySelect.addEventListener('change', () => {
-        const city = citySelect.value;
-        const risk = riskSelect.value;
-        if (city && risk) loadAlert(city, risk);
-        else alertForm.classList.add('hidden');
-    });
-
-    riskSelect.addEventListener('change', () => {
-        const city = citySelect.value;
-        const risk = riskSelect.value;
-        if (city && risk) loadAlert(city, risk);
-        else alertForm.classList.add('hidden');
-    });
-
-    // Add another action
-    const addActionBtn = document.getElementById('add-action-btn');
-    addActionBtn.addEventListener('click', () => {
-        actionsContainer.appendChild(createActionInput());
+        actionsContainer.appendChild(div);
         feather.replace();
+
+        div.querySelector('.remove-action-btn').addEventListener('click', () => div.remove());
     });
 
-    // Save changes
-    saveAlertBtn.addEventListener('click', async () => {
+    // Save alert
+    saveAlertBtn.addEventListener('click', async function() {
         const city = citySelect.value;
-        const risk = riskSelect.value;
-        const actions = Array.from(actionsContainer.querySelectorAll('.alert-action')).map(i => i.value);
-        const riskAssessment = assessmentTextarea.value;
-
-        if (!city || !risk) {
-            alert('Please select a city and risk level.');
-            return;
-        }
+        const riskLevel = riskLevelSelect.value;
+        const actions = Array.from(document.querySelectorAll('.alert-action')).map(input => input.value);
+        const assessment = document.getElementById('risk-assessment-text').value;
 
         try {
-            const res = await fetch('/alerts', {
+            const res = await fetch('http://127.0.0.1:8000/alerts', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     city: city,
-                    risk_level: risk,
+                    risk_level: riskLevel,
                     actions: actions,
-                    risk_assessment: riskAssessment
+                    risk_assessment: assessment
                 })
             });
-            if (!res.ok) throw new Error('Failed to save alert');
 
-            // Show success modal
+            if (!res.ok) throw new Error('Failed to save alert');
+            const data = await res.json();
+            console.log('Alert saved:', data);
+
             successModal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
-        } catch(err) {
-            alert('Error saving alert: ' + err.message);
+        } catch (err) {
+            console.error('Error saving alert:', err);
+            alert('Error saving alert. Please check console.');
         }
     });
 
-    closeSuccessModal.addEventListener('click', () => {
+    closeSuccessModal.addEventListener('click', function() {
         successModal.classList.add('hidden');
         document.body.style.overflow = 'auto';
     });
 
-    successModal.addEventListener('click', e => {
+    successModal.addEventListener('click', function(e) {
         if (e.target === successModal) {
             successModal.classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
     });
 });
+
 </script>
 
 </body>
