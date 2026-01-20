@@ -1,3 +1,4 @@
+from fastapi.encoders import jsonable_encoder
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -7,7 +8,7 @@ import tensorflow as tf
 import joblib
 import types, sys, datetime
 from urllib.parse import quote_plus
-from mangum import Mangum  
+
 
 
 # Fake tz_util to avoid the import error
@@ -48,8 +49,8 @@ app.add_middleware(
 # =====================================================
 # 📦 MODEL & SCALER PATH
 # =====================================================
-MODEL_PATH = "Model/dengue_classification_model.keras"
-SCALER_PATH = "Model/scaler_classification.pkl"
+MODEL_PATH = "backend/Model/dengue_classification_model.keras"
+SCALER_PATH = "backend/Model/scaler_classification.pkl"
 
 # =====================================================
 # ⏱ WINDOW SIZE
@@ -226,6 +227,61 @@ async def forecast_next_week(input_data: DengueForecastInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/cases-latest")
+async def get_latest_cases_per_city():
+    """
+    Returns the most recent dengue cases per city
+    from the latest uploaded CSV.
+    """
+    try:
+        # 1️⃣ Get latest uploaded CSV
+        doc = db["raw_csv_uploads"].find_one(
+            sort=[("uploaded_at", -1)]
+        )
+
+        if not doc:
+            return []
+
+        # 2️⃣ Load CSV into DataFrame
+        df = pd.read_csv(io.BytesIO(doc["data"]))
+
+        # 3️⃣ Create DATE column
+        df["DATE"] = pd.to_datetime(df[["YEAR", "MONTH", "DAY"]])
+
+        # 4️⃣ Get latest record per city
+        latest_df = (
+            df.sort_values("DATE")
+              .groupby("LAND AREA")
+              .tail(1)
+        )
+
+        results = []
+
+        for _, row in latest_df.iterrows():
+            city = land_area_to_city.get(
+                round(row["LAND AREA"], 2),
+                "Unknown City"
+            )
+
+            results.append({
+                "city": city.title(),
+                "cases": int(row["CASES"]),
+                "risk_level": "High" if row["CASES"] > 100 else "Moderate" if row["CASES"] > 50 else "Low",
+                "last_updated": row["DATE"].strftime("%b %d, %Y")
+            })
+
+        # 5️⃣ Sort by cases (descending)
+        results.sort(key=lambda x: x["cases"], reverse=True)
+
+        return results
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch latest cases: {e}"
+        )
+
+
 # =====================================================
 # 🗺️ FETCH LATEST FORECAST FOR ALL CITIES
 # =====================================================
@@ -301,6 +357,37 @@ async def get_raw_csv_data():
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+    
+from fastapi.encoders import jsonable_encoder
+
+@app.get("/api/alerts")
+async def get_alerts(city: str = None, risk_level: str = None):
+    """
+    Fetch all alerts (used by alerts.html page)
+    Supports filtering by city and risk level
+    """
+    query = {}
+
+    if city:
+        query["city"] = city.strip().upper()
+
+    if risk_level and risk_level.lower() != "all":
+        query["risk_level"] = risk_level.capitalize()
+
+    docs = alerts_collection.find(query).sort("created_at", -1)
+
+    results = []
+    for doc in docs:
+        results.append({
+            "city": doc["city"],
+            "risk_level": doc["risk_level"],
+            "risk_assessment": doc["risk_assessment"],
+            "actions": doc["actions"],
+            "updated_at": doc.get("created_at")
+        })
+
+    return jsonable_encoder(results)
+
 
 
 
@@ -389,37 +476,26 @@ async def save_alert(alert: AlertRequest):
 # =====================================================
 # CSV Preprocessing + Recursive Forecasting + Save CSV
 # =====================================================
-from fastapi import UploadFile, File
+from fastapi import UploadFile, File, HTTPException
 from bson import Binary
+import io
+import pandas as pd
+import datetime
 
 @app.post("/preprocessing")
-async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
+async def preprocessing(file: UploadFile = File(...)):
     """
     Accepts a raw CSV file containing multiple cities,
-    saves the CSV in MongoDB,
+    saves the CSV in MongoDB (both raw and JSON formats),
     preprocesses each city independently,
-    and returns recursive forecasts for up to `weeks_ahead` weeks.
-    Default is 4 weeks, max is 8 weeks.
+    and returns forecast for the NEXT WEEK only.
     """
     try:
-        # Cap weeks ahead at 8
-        weeks_ahead = min(weeks_ahead, 8)
-
         # -------------------------------
         # Read CSV
         # -------------------------------
         contents = await file.read()
         df = pd.read_csv(io.BytesIO(contents))
-
-        # -------------------------------
-        # Save raw CSV in MongoDB
-        # -------------------------------
-        db["raw_csv_uploads"].insert_one({
-            "filename": file.filename,
-            "uploaded_at": datetime.datetime.utcnow(),
-            "cities": list(df["LAND AREA"].unique()),
-            "data": Binary(contents)
-        })
 
         # -------------------------------
         # Required columns (raw)
@@ -438,6 +514,27 @@ async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
             )
 
         # -------------------------------
+        # Save original CSV in raw_csv_uploads
+        # -------------------------------
+        db["raw_csv_uploads"].insert_one({
+            "filename": file.filename,
+            "uploaded_at": datetime.datetime.utcnow(),
+            "cities": list(df["LAND AREA"].unique()),
+            "data": Binary(contents)
+        })
+
+        # -------------------------------
+        # Save CSV as JSON in raw_csv_json
+        # -------------------------------
+        csv_json = df.to_dict(orient="records")
+        db["raw_csv_json"].insert_one({
+            "filename": file.filename,
+            "uploaded_at": datetime.datetime.utcnow(),
+            "cities": list(df["LAND AREA"].unique()),
+            "data_json": csv_json
+        })
+
+        # -------------------------------
         # Sort by date globally
         # -------------------------------
         df["DATE"] = pd.to_datetime(df[["YEAR", "MONTH", "DAY"]])
@@ -451,84 +548,69 @@ async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
         for land_area, city_df in df.groupby("LAND AREA"):
             city_df = city_df.sort_values("DATE").reset_index(drop=True)
 
-            # Incidence per 100k
+            # Normalize cases per 100k population
             city_df["CASES"] = (city_df["CASES"] / city_df["POPULATION"]) * 100000
 
-            # Forecast container for recursive steps
-            city_forecasts = []
-
-            # Copy for recursive predictions
             temp_df = city_df.copy()
 
-            for week in range(1, weeks_ahead + 1):
-                # -------------------------------
-                # Lag features
-                # -------------------------------
-                for lag in range(1, WINDOW + 1):
-                    temp_df[f"CASES_lag{lag}"] = temp_df["CASES"].shift(lag)
-                    temp_df[f"RAINFALL_lag{lag}"] = temp_df["RAINFALL"].shift(lag)
-                    temp_df[f"TMAX_lag{lag}"] = temp_df["TMAX"].shift(lag)
-                    temp_df[f"TMIN_lag{lag}"] = temp_df["TMIN"].shift(lag)
-                    temp_df[f"TMEAN_lag{lag}"] = temp_df["TMEAN"].shift(lag)
-                    temp_df[f"RH_lag{lag}"] = temp_df["RH"].shift(lag)
-                    temp_df[f"SUNSHINE_lag{lag}"] = temp_df["SUNSHINE"].shift(lag)
+            # -------------------------------
+            # Lag features
+            # -------------------------------
+            for lag in range(1, WINDOW + 1):
+                temp_df[f"CASES_lag{lag}"] = temp_df["CASES"].shift(lag)
+                temp_df[f"RAINFALL_lag{lag}"] = temp_df["RAINFALL"].shift(lag)
+                temp_df[f"TMAX_lag{lag}"] = temp_df["TMAX"].shift(lag)
+                temp_df[f"TMIN_lag{lag}"] = temp_df["TMIN"].shift(lag)
+                temp_df[f"TMEAN_lag{lag}"] = temp_df["TMEAN"].shift(lag)
+                temp_df[f"RH_lag{lag}"] = temp_df["RH"].shift(lag)
+                temp_df[f"SUNSHINE_lag{lag}"] = temp_df["SUNSHINE"].shift(lag)
 
-                # -------------------------------
-                # Rolling features
-                # -------------------------------
-                temp_df["CASES_roll2_mean"] = temp_df["CASES"].rolling(2).mean()
-                temp_df["CASES_roll4_mean"] = temp_df["CASES"].rolling(4).mean()
-                temp_df["CASES_roll2_sum"] = temp_df["CASES"].rolling(2).sum()
-                temp_df["CASES_roll4_sum"] = temp_df["CASES"].rolling(4).sum()
+            # -------------------------------
+            # Rolling features
+            # -------------------------------
+            temp_df["CASES_roll2_mean"] = temp_df["CASES"].rolling(2).mean()
+            temp_df["CASES_roll4_mean"] = temp_df["CASES"].rolling(4).mean()
+            temp_df["CASES_roll2_sum"] = temp_df["CASES"].rolling(2).sum()
+            temp_df["CASES_roll4_sum"] = temp_df["CASES"].rolling(4).sum()
 
-                temp_df["RAINFALL_roll2_mean"] = temp_df["RAINFALL"].rolling(2).mean()
-                temp_df["RAINFALL_roll4_mean"] = temp_df["RAINFALL"].rolling(4).mean()
-                temp_df["RAINFALL_roll2_sum"] = temp_df["RAINFALL"].rolling(2).sum()
-                temp_df["RAINFALL_roll4_sum"] = temp_df["RAINFALL"].rolling(4).sum()
+            temp_df["RAINFALL_roll2_mean"] = temp_df["RAINFALL"].rolling(2).mean()
+            temp_df["RAINFALL_roll4_mean"] = temp_df["RAINFALL"].rolling(4).mean()
+            temp_df["RAINFALL_roll2_sum"] = temp_df["RAINFALL"].rolling(2).sum()
+            temp_df["RAINFALL_roll4_sum"] = temp_df["RAINFALL"].rolling(4).sum()
 
-                temp_df["TMEAN_roll2_mean"] = temp_df["TMEAN"].rolling(2).mean()
-                temp_df["TMEAN_roll4_mean"] = temp_df["TMEAN"].rolling(4).mean()
-                temp_df["TMEAN_roll2_sum"] = temp_df["TMEAN"].rolling(2).sum()
-                temp_df["TMEAN_roll4_sum"] = temp_df["TMEAN"].rolling(4).sum()
+            temp_df["TMEAN_roll2_mean"] = temp_df["TMEAN"].rolling(2).mean()
+            temp_df["TMEAN_roll4_mean"] = temp_df["TMEAN"].rolling(4).mean()
+            temp_df["TMEAN_roll2_sum"] = temp_df["TMEAN"].rolling(2).sum()
+            temp_df["TMEAN_roll4_sum"] = temp_df["TMEAN"].rolling(4).sum()
 
-                temp_df["RH_roll2_mean"] = temp_df["RH"].rolling(2).mean()
-                temp_df["RH_roll4_mean"] = temp_df["RH"].rolling(4).mean()
-                temp_df["RH_roll2_sum"] = temp_df["RH"].rolling(2).sum()
-                temp_df["RH_roll4_sum"] = temp_df["RH"].rolling(4).sum()
+            temp_df["RH_roll2_mean"] = temp_df["RH"].rolling(2).mean()
+            temp_df["RH_roll4_mean"] = temp_df["RH"].rolling(4).mean()
+            temp_df["RH_roll2_sum"] = temp_df["RH"].rolling(2).sum()
+            temp_df["RH_roll4_sum"] = temp_df["RH"].rolling(4).sum()
 
-                # Drop NaNs
-                temp_df_clean = temp_df.dropna().reset_index(drop=True)
-                if len(temp_df_clean) < WINDOW:
-                    break
+            # Drop NaNs
+            temp_df_clean = temp_df.dropna().reset_index(drop=True)
+            if len(temp_df_clean) < WINDOW:
+                continue
 
-                # -------------------------------
-                # Extract last WINDOW and predict
-                # -------------------------------
-                window_df = temp_df_clean.iloc[-WINDOW:][final_feature_columns]
-                scaled = scaler.transform(window_df)
-                X = scaled.reshape(1, WINDOW, len(final_feature_columns))
-                preds = model.predict(X)
-                risk = risk_labels[int(np.argmax(preds[0]))]
+            # -------------------------------
+            # Predict NEXT WEEK only
+            # -------------------------------
+            window_df = temp_df_clean.iloc[-WINDOW:][final_feature_columns]
+            scaled = scaler.transform(window_df)
+            X = scaled.reshape(1, WINDOW, len(final_feature_columns))
+            preds = model.predict(X)
+            risk = risk_labels[int(np.argmax(preds[0]))]
 
-                # Forecast date = last date + 7 days
-                last_date = temp_df["DATE"].iloc[-1]
-                forecast_date = last_date + pd.Timedelta(days=7)
+            last_date = temp_df["DATE"].iloc[-1]
+            forecast_date = last_date + pd.Timedelta(days=7)
+            city_name = land_area_to_city.get(round(land_area, 2), "Unknown City")
 
-                city_name = land_area_to_city.get(round(land_area, 2), "Unknown City")
-                city_forecasts.append({
-                    "city": city_name,
-                    "week": week,
-                    "forecast_date": forecast_date.strftime("%Y-%m-%d"),
-                    "risk_level": risk
-                })
-
-                # Append placeholder row for next week
-                new_row = temp_df.iloc[-1:].copy()
-                new_row["DATE"] = forecast_date
-                new_row["CASES"] = (100000 / new_row["POPULATION"].values[0]) * 0
-                temp_df = pd.concat([temp_df, new_row], ignore_index=True)
-
-            results.extend(city_forecasts)
+            results.append({
+                "city": city_name,
+                "forecast_date": forecast_date.strftime("%Y-%m-%d"),
+                "risk_level": risk
+            })
 
         if not results:
             raise HTTPException(
@@ -539,7 +621,6 @@ async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
         return {
             "status": "OK",
             "num_cities": len(set(r["city"] for r in results)),
-            "weeks_forecasted": weeks_ahead,
             "forecasts": results
         }
 
@@ -550,5 +631,3 @@ async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
             status_code=500,
             detail=f"CSV preprocessing failed: {e}"
         )
-    
-handler = Mangum(app)

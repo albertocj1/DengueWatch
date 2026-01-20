@@ -1,3 +1,28 @@
+let csvUploaded = false;
+const landAreaToCity = {
+    24.98: "MANILA CITY",
+    171.71: "QUEZON CITY",
+    55.8: "CALOOCAN CITY",
+    32.69: "LAS PINAS CITY",
+    21.57: "MAKATI CITY",
+    15.71: "MALABON CITY",
+    9.29: "MANDALUYONG CITY",
+    21.52: "MARIKINA CITY",
+    39.75: "MUNTINLUPA CITY",
+    8.94: "NAVOTAS CITY",
+    46.57: "PARANAQUE CITY",
+    13.97: "PASAY CITY",
+    48.46: "PASIG CITY",
+    10.4: "PATEROS",
+    5.95: "SAN JUAN CITY",
+    45.21: "TAGUIG CITY",
+    47.02: "VALENZUELA CITY"
+};
+
+const fileInput = document.getElementById("csv-upload");
+let selectedFile = null;
+
+
 // Load external scripts dynamically
 function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -49,6 +74,76 @@ document.getElementById('logoutBtn').addEventListener('click', function (e) {
     window.location.href = 'login.html';
 });
 
+function renderRiskChart() {
+    if (!document.getElementById('riskChart')) return;
+
+    const riskCtx = document.getElementById('riskChart').getContext('2d');
+
+    const paths = document.querySelectorAll('.risk-path');
+    let riskCounts = { Low: 0, Moderate: 0, High: 0, VeryHigh: 0 };
+
+    paths.forEach(path => {
+        const risk = path.dataset.risk;
+        if (riskCounts[risk] !== undefined) {
+            riskCounts[risk]++;
+        }
+    });
+
+    if (window.riskChartInstance) {
+        window.riskChartInstance.destroy();
+    }
+
+    window.riskChartInstance = new Chart(riskCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low Risk', 'Moderate Risk', 'High Risk', 'Very High Risk'],
+            datasets: [{
+                data: [
+                    riskCounts.Low,
+                    riskCounts.Moderate,
+                    riskCounts.High,
+                    riskCounts.VeryHigh
+                ],
+                backgroundColor: ['#4ade80', '#fbbf24', '#f87171', '#dc2626'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+async function updateMapRisks() {
+    try {
+        const response = await fetch('http://localhost:8000/api/latest-forecast');
+        if (!response.ok) throw new Error("Failed to fetch risk data");
+
+        const riskDataFromDB = await response.json();
+
+        document.querySelectorAll('.risk-path').forEach(path => {
+            const city = path.getAttribute('city');
+            const record = riskDataFromDB.find(item => item.city === city);
+            const risk = record ? record.risk_level : null;
+
+            path.setAttribute('risk_level', risk || '');
+            path.dataset.risk = risk || '';
+            path.style.fill = riskColors[risk] || '#bfbfbf';
+        });
+
+        renderRiskChart();
+
+    } catch (err) {
+        console.error('Error fetching or applying risk data:', err);
+    }
+}
+
+
 
 // Main initialization function
 async function initializeApp() {
@@ -57,8 +152,6 @@ async function initializeApp() {
         loadScript('https://cdn.jsdelivr.net/npm/chart.js'),
         loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js'),
         loadScript('https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js'),
-        document.location.pathname.includes('admin.html') && 
-            loadScript('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js')
     ]);
 
     feather.replace();
@@ -89,82 +182,6 @@ async function initializeApp() {
 
     // Initialize charts if element exists
     // Create or update risk chart if element exists
-function renderRiskChart() {
-    if (!document.getElementById('riskChart')) return;
-
-    const riskCtx = document.getElementById('riskChart').getContext('2d');
-
-    // Count risks dynamically from paths
-    const paths = document.querySelectorAll('.risk-path');
-    let riskCounts = { Low: 0, Moderate: 0, High: 0, VeryHigh: 0 };
-
-    paths.forEach(path => {
-        const risk = path.dataset.risk; // dataset.risk now set in updateMapRisks()
-        if (riskCounts[risk] !== undefined) {
-            riskCounts[risk]++;
-        }
-    });
-
-    // Destroy old chart instance if exists
-    if (window.riskChartInstance) {
-        window.riskChartInstance.destroy();
-    }
-
-    window.riskChartInstance = new Chart(riskCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Low Risk', 'Moderate Risk', 'High Risk', 'Very High Risk'],
-            datasets: [{
-                data: [
-                    riskCounts.Low,
-                    riskCounts.Moderate,
-                    riskCounts.High,
-                    riskCounts.VeryHigh
-                ],
-                backgroundColor: ['#4ade80', '#fbbf24', '#f87171', '#dc2626'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-}
-
-// Call renderRiskChart after map risks are updated
-async function updateMapRisks() {
-    try {
-        const response = await fetch('http://localhost:8000/api/latest-forecast');
-        if (!response.ok) throw new Error("Failed to fetch risk data");
-
-        const riskDataFromDB = await response.json();
-
-        document.querySelectorAll('.risk-path').forEach(path => {
-            const city = path.getAttribute('city');  // city attribute
-            const record = riskDataFromDB.find(item => item.city === city);
-            const risk = record ? record.risk_level : null;
-
-            path.setAttribute('risk_level', risk || ''); // keep old code if needed
-            path.dataset.risk = risk || ''; // for chart
-            path.style.fill = riskColors[risk] || '#bfbfbf';
-        });
-
-        // Render the chart after updating the map
-        renderRiskChart();
-
-    } catch (err) {
-        console.error('Error fetching or applying risk data:', err);
-    }
-}
-
-window.addEventListener('DOMContentLoaded', updateMapRisks);
     
         // Animate elements
         anime({
@@ -174,153 +191,86 @@ window.addEventListener('DOMContentLoaded', updateMapRisks);
             loop: true,
             easing: 'easeInOutSine'
         });
-    }
 
     // Admin page functionality
     if (document.getElementById('dropzone')) {
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('csv-upload');
-        const uploadArea = document.getElementById('upload-area');
-        const processingArea = document.getElementById('processing-area');
-        const successMessage = document.getElementById('success-message');
-        const previewTable = document.getElementById('preview-table');
-        const submitBtn = document.getElementById('submit-btn');
-        
-        // Handle drag and drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, preventDefaults, false);
+        const dropzone = document.getElementById("dropzone");
+        const submitBtn = document.getElementById("submit-btn");
+        const uploadArea = document.getElementById("upload-area");
+        const processingArea = document.getElementById("processing-area");
+        const successMessage = document.getElementById("success-message");
+
+        // Drag & drop
+        ["dragenter", "dragover"].forEach(evt => {
+            dropzone.addEventListener(evt, e => {
+                e.preventDefault();
+                dropzone.classList.add("border-blue-500");
+            });
         });
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropzone.addEventListener(eventName, highlight, false);
+        ["dragleave", "drop"].forEach(evt => {
+            dropzone.addEventListener(evt, e => {
+                e.preventDefault();
+                dropzone.classList.remove("border-blue-500");
+            });
         });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight() {
-            dropzone.classList.add('border-blue-500');
-        }
-
-        function unhighlight() {
-            dropzone.classList.remove('border-blue-500');
-        }
-
-        // Handle dropped files
-        dropzone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        }
-
-        // Handle selected files
-        fileInput.addEventListener('change', function() {
-            handleFiles(this.files);
-        });
-
-        function handleFiles(files) {
-            if (files.length && files[0].type === 'text/csv') {
-                uploadArea.classList.add('hidden');
-                processingArea.classList.remove('hidden');
-                
-                // Parse CSV
-                Papa.parse(files[0], {
-                    header: true,
-                    complete: function(results) {
-                        processingArea.classList.add('hidden');
-                        successMessage.classList.remove('hidden');
-                        
-                        // Update preview table
-                        updatePreviewTable(results.data);
-                        
-                        // Reset after 3 seconds
-                        setTimeout(() => {
-                            successMessage.classList.add('hidden');
-                            uploadArea.classList.remove('hidden');
-                        }, 3000);
-                    },
-                    error: function(error) {
-                        console.error('Error parsing CSV:', error);
-                        processingArea.classList.add('hidden');
-                        uploadArea.classList.remove('hidden');
-                        alert('Error parsing CSV file. Please check the format.');
-                    }
-                });
-            } else {
-                alert('Please upload a valid CSV file.');
+        dropzone.addEventListener("drop", e => {
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                selectedFile = files[0];
+                fileInput.files = files;
+                previewLocalCSV(selectedFile);
             }
-        }
+        });
 
-        function updatePreviewTable(data) {
-            if (data && data.length > 0) {
-                previewTable.innerHTML = '';
-                
-                data.slice(0, 5).forEach(row => { // Show first 5 rows only
-                    const tr = document.createElement('tr');
-                    
-                    ['Region', 'Cases', 'Date', 'Risk Level'].forEach(col => {
-                        const td = document.createElement('td');
-                        td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
-                        td.textContent = row[col] || 'N/A';
-                        tr.appendChild(td);
-                    });
-                    
-                    previewTable.appendChild(tr);
-                });
-                
-                if (data.length > 5) {
-                    const tr = document.createElement('tr');
-                    const td = document.createElement('td');
-                    td.colSpan = 4;
-                    td.className = 'px-6 py-4 text-center text-sm text-gray-500';
-                    td.textContent = `+ ${data.length - 5} more rows not shown`;
-                    tr.appendChild(td);
-                    previewTable.appendChild(tr);
+        fileInput.addEventListener("change", e => {
+            selectedFile = e.target.files[0];
+        });
+
+        // Submit → FastAPI
+        submitBtn.addEventListener("click", async () => {
+            if (!selectedFile) {
+                alert("Please upload a CSV file");
+                return;
+            }
+
+            uploadArea.classList.add("hidden");
+            processingArea.classList.remove("hidden");
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            try {
+                const res = await fetch(
+                    "http://localhost:8000/preprocessing?weeks_ahead=1",
+                    { method: "POST", body: formData }
+                );
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || "Upload failed");
                 }
+
+                await res.json();
+
+                processingArea.classList.add("hidden");
+                successMessage.classList.remove("hidden");
+
+                setTimeout(() => {
+                    successMessage.classList.add("hidden");
+                    uploadArea.classList.remove("hidden");
+                }, 2000);
+
+            } catch (err) {
+                processingArea.classList.add("hidden");
+                uploadArea.classList.remove("hidden");
+                alert(err.message);
             }
-        }
+        });
 
-        // Submit button action
-        submitBtn.addEventListener('click', function() {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-        <span class="flex items-center justify-center w-full">
-            <i data-feather="loader" class="animate-spin w-4 h-4 mr-2"></i>
-            Updating...
-        </span>
-        `;
-        feather.replace();
-
-
-        // Simulate API call
-        setTimeout(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Update Dashboard Data';
-
-            // Create overlay div
-            const overlay = document.createElement('div');
-            overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-            overlay.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-lg text-center animate-fade-in">
-                    <p class="text-gray-800 font-medium"><strong>Dashboard data has been updated successfully!</strong></p>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-
-            setTimeout(() => {
-                overlay.remove();
-            }, 1500);
-        }, 2000);
-    });
     }
+
 
     // Alerts page weather functionality
     if (document.getElementById('location-select')) {
@@ -426,6 +376,17 @@ window.addEventListener('DOMContentLoaded', updateMapRisks);
             });
         });
     }
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        previewLocalCSV(file);
+    });
+
+}
+
+window.addEventListener('DOMContentLoaded', updateMapRisks);
 
 // Weather update function
 function updateWeather(city = "Manila") {
@@ -766,44 +727,84 @@ function populateCasesTable() {
 
 async function loadCSVPreview() {
     const tbody = document.getElementById('preview-table');
-    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading...</td></tr>';
 
     try {
-        const res = await fetch('http://127.0.0.1:8000/api/raw-csv-data');
-        const result = await res.json();
+        const res = await fetch('http://localhost:8000/api/raw-csv-data');
+        const { data } = await res.json();
 
-        const data = result.data;
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No data uploaded yet</td></tr>';
+        tbody.innerHTML = '';
+
+        if (!data.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-gray-500 py-4">
+                        No data uploaded yet
+                    </td>
+                </tr>`;
             return;
         }
 
-        // Clear table
-        tbody.innerHTML = '';
-
         data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.className = 'bg-white divide-y divide-gray-200';
-            
-            // Compute risk level if available; otherwise show N/A
-            let riskLevel = row.risk_level || 'N/A';
+            const landArea = Number(row["LAND AREA"]);
+            const city = landAreaToCity[landArea] || "Unknown City";
 
-            tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.CITY}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.CASES}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.YEAR}-${String(row.MONTH).padStart(2,'0')}-${String(row.DAY).padStart(2,'0')}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${riskLevel}</td>
+            const date = `${row["YEAR"]}-${String(row["MONTH"]).padStart(2, "0")}-${String(row["DAY"]).padStart(2, "0")}`;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="px-6 py-2 font-medium">${city}</td>
+                    <td class="px-6 py-2">${Number(row["CASES"]).toFixed(2)}</td>
+                    <td class="px-6 py-2">${date}</td>
+                </tr>
             `;
-            tbody.appendChild(tr);
         });
-    } catch (err) {
-        console.error('Error loading CSV preview:', err);
-        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Failed to load data</td></tr>';
+
+
+    } catch (e) {
+        console.error("Preview load failed", e);
     }
 }
 
-// Call on page load
-document.addEventListener('DOMContentLoaded', loadCSVPreview);
+function previewLocalCSV(file) {
+    const reader = new FileReader();
+    const tbody = document.getElementById('preview-table');
+
+    reader.onload = (evt) => {
+        const text = evt.target.result;
+        const lines = text.trim().split('\n');
+
+        if (lines.length <= 1) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-4">No data in file</td></tr>`;
+            return;
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        const dataRows = lines.slice(1);
+
+        tbody.innerHTML = '';
+
+        dataRows.forEach(line => {
+            const cols = line.split(',').map(c => c.trim());
+            const row = {};
+            headers.forEach((h, i) => row[h] = cols[i]);
+
+            const landArea = Number(row["LAND AREA"]);
+            const city = landAreaToCity[landArea] || "Unknown City";
+            const date = `${row["YEAR"]}-${String(row["MONTH"]).padStart(2, "0")}-${String(row["DAY"]).padStart(2, "0")}`;
+            const cases = Number(row["CASES"]).toFixed(2);
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="px-6 py-2 font-medium">${city}</td>
+                    <td class="px-6 py-2">${cases}</td>
+                    <td class="px-6 py-2">${date}</td>
+                </tr>
+            `;
+        });
+    };
+
+    reader.readAsText(file);
+}
 
 
 // Initialize app when DOM is loaded
@@ -817,3 +818,5 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCasesTable();
     }, 100);
 });
+
+
