@@ -6,6 +6,9 @@ from typing import List, Dict, Type
 import tensorflow as tf
 import joblib
 import types, sys, datetime
+from urllib.parse import quote_plus
+from mangum import Mangum  
+
 
 # Fake tz_util to avoid the import error
 if 'bson.tz_util' not in sys.modules:
@@ -112,14 +115,30 @@ except Exception as e:
     raise RuntimeError(f"Failed to load model or scaler: {e}")
 
 # =====================================================
-# 🔌 MONGODB SETUP
+# 🔌 MONGODB SETUP (Atlas Hard-coded, escaped)
 # =====================================================
-client = MongoClient("mongodb://localhost:27017/")  # replace with your URI
-db = client["dengue_db"]
+MONGO_USER = "albertochristianjoshua_db_user"
+MONGO_PASSWORD = "password052304@"  # Replace with your actual password
+MONGO_CLUSTER = "cluster1.7vey5de.mongodb.net"
+MONGO_DB = "dengue_db"
+
+# Escape special characters in username and password
+user_escaped = quote_plus(MONGO_USER)
+password_escaped = quote_plus(MONGO_PASSWORD)
+
+# Build the URI
+MONGO_URI = f"mongodb+srv://{user_escaped}:{password_escaped}@{MONGO_CLUSTER}/?retryWrites=true&w=majority"
+
+# Connect to MongoDB Atlas
+try:
+    client = MongoClient(MONGO_URI)
+    client.admin.command("ping")
+    print("✅ Connected to MongoDB Atlas successfully!")
+except Exception as e:
+    raise RuntimeError(f"❌ Failed to connect to MongoDB Atlas: {e}")
+
+db = client[MONGO_DB]
 collection = db["forecasts"]
-# =====================================================
-# 🚨 ALERT RECOMMENDATIONS COLLECTION
-# =====================================================
 alerts_collection = db["alert_recommendations"]
 
 
@@ -532,4 +551,4 @@ async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
             detail=f"CSV preprocessing failed: {e}"
         )
     
-    
+handler = Mangum(app)
