@@ -88,46 +88,84 @@ async function initializeApp() {
     }
 
     // Initialize charts if element exists
-    if (document.getElementById('riskChart')) {
-        const riskCtx = document.getElementById('riskChart').getContext('2d');
+    // Create or update risk chart if element exists
+function renderRiskChart() {
+    if (!document.getElementById('riskChart')) return;
 
-        // Count risks dynamically from paths
-        const paths = document.querySelectorAll('.risk-path');
-        let riskCounts = { Low: 0, Moderate: 0, High: 0 , VeryHigh: 0};
+    const riskCtx = document.getElementById('riskChart').getContext('2d');
 
-        paths.forEach(path => {
-            const risk = path.dataset.risk; // 'Low', 'Moderate', 'High', 'VeryHigh'
-            if (riskCounts[risk] !== undefined) {
-                riskCounts[risk]++;
-            }
-        });
-        const riskChart = new Chart(riskCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Low Risk', 'Moderate Risk', 'High Risk', 'Very High Risk'],
-                datasets: [{
-                    data: [
-                        riskCounts.Low,
-                        riskCounts.Moderate,
-                        riskCounts.High,
-                        riskCounts.VeryHigh
-                    ],
-                    backgroundColor: ['#4ade80', '#fbbf24', '#f87171','#dc2626'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,       // Make chart responsive
-                maintainAspectRatio: false, // Let container size dictate chart size
-                cutout: '70%',
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+    // Count risks dynamically from paths
+    const paths = document.querySelectorAll('.risk-path');
+    let riskCounts = { Low: 0, Moderate: 0, High: 0, VeryHigh: 0 };
+
+    paths.forEach(path => {
+        const risk = path.dataset.risk; // dataset.risk now set in updateMapRisks()
+        if (riskCounts[risk] !== undefined) {
+            riskCounts[risk]++;
+        }
+    });
+
+    // Destroy old chart instance if exists
+    if (window.riskChartInstance) {
+        window.riskChartInstance.destroy();
+    }
+
+    window.riskChartInstance = new Chart(riskCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low Risk', 'Moderate Risk', 'High Risk', 'Very High Risk'],
+            datasets: [{
+                data: [
+                    riskCounts.Low,
+                    riskCounts.Moderate,
+                    riskCounts.High,
+                    riskCounts.VeryHigh
+                ],
+                backgroundColor: ['#4ade80', '#fbbf24', '#f87171', '#dc2626'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom'
                 }
             }
+        }
+    });
+}
+
+// Call renderRiskChart after map risks are updated
+async function updateMapRisks() {
+    try {
+        const response = await fetch('http://localhost:8000/api/latest-forecast');
+        if (!response.ok) throw new Error("Failed to fetch risk data");
+
+        const riskDataFromDB = await response.json();
+
+        document.querySelectorAll('.risk-path').forEach(path => {
+            const city = path.getAttribute('city');  // city attribute
+            const record = riskDataFromDB.find(item => item.city === city);
+            const risk = record ? record.risk_level : null;
+
+            path.setAttribute('risk_level', risk || ''); // keep old code if needed
+            path.dataset.risk = risk || ''; // for chart
+            path.style.fill = riskColors[risk] || '#bfbfbf';
         });
 
+        // Render the chart after updating the map
+        renderRiskChart();
+
+    } catch (err) {
+        console.error('Error fetching or applying risk data:', err);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', updateMapRisks);
+    
         // Animate elements
         anime({
             targets: '.risk-high',
@@ -388,7 +426,6 @@ async function initializeApp() {
             });
         });
     }
-}
 
 // Weather update function
 function updateWeather(city = "Manila") {
@@ -726,6 +763,48 @@ function populateCasesTable() {
         tableBody.appendChild(row);
     });
 }
+
+async function loadCSVPreview() {
+    const tbody = document.getElementById('preview-table');
+    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading...</td></tr>';
+
+    try {
+        const res = await fetch('http://127.0.0.1:8000/api/raw-csv-data');
+        const result = await res.json();
+
+        const data = result.data;
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No data uploaded yet</td></tr>';
+            return;
+        }
+
+        // Clear table
+        tbody.innerHTML = '';
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'bg-white divide-y divide-gray-200';
+            
+            // Compute risk level if available; otherwise show N/A
+            let riskLevel = row.risk_level || 'N/A';
+
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.CITY}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.CASES}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.YEAR}-${String(row.MONTH).padStart(2,'0')}-${String(row.DAY).padStart(2,'0')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${riskLevel}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('Error loading CSV preview:', err);
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Failed to load data</td></tr>';
+    }
+}
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', loadCSVPreview);
+
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

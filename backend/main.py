@@ -256,6 +256,34 @@ async def get_alert(city: str, risk_level: str):
 
     return doc
 
+from fastapi.responses import JSONResponse
+import pandas as pd
+import io
+
+@app.get("/api/raw-csv-data")
+async def get_raw_csv_data():
+    """
+    Fetch the latest uploaded CSV from raw_csv_uploads collection and return as JSON
+    """
+    try:
+        # Get the latest uploaded CSV
+        doc = db["raw_csv_uploads"].find_one(sort=[("uploaded_at", -1)])
+        if not doc:
+            return JSONResponse(content={"data": []})
+
+        # Read the CSV bytes into pandas
+        csv_bytes = doc["data"]
+        df = pd.read_csv(io.BytesIO(csv_bytes))
+
+        # Optional: only return first 50 rows for preview
+        preview = df.head(50).to_dict(orient="records")
+
+        return {"data": preview}
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
 
 # =====================================================
 # 🏙️ FETCH LATEST FORECAST FOR A SINGLE CITY
@@ -295,34 +323,48 @@ async def health():
 
 from fastapi.responses import JSONResponse
 
+from fastapi.responses import JSONResponse
+
 @app.post("/alerts", response_model=AlertResponse)
 async def save_alert(alert: AlertRequest):
     """
     Save or update alert recommendations for a city and risk level.
     """
     try:
+        # Standardize city and risk_level
         city_name = alert.city.strip().upper()
         risk_level = alert.risk_level.strip()
 
-        # Check if an alert already exists
-        existing = alerts_collection.find_one({"city": city_name, "risk_level": risk_level})
-
+        # Build document
         doc = {
             "city": city_name,
             "risk_level": risk_level,
-            "risk_assessment": alert.risk_assessment,
-            "actions": alert.actions,
+            "risk_assessment": alert.risk_assessment.strip(),
+            "actions": [a.strip() for a in alert.actions if a.strip()],  # remove empty actions
             "created_at": datetime.datetime.utcnow()
         }
+
+        # Check if alert already exists
+        existing = alerts_collection.find_one({"city": city_name, "risk_level": risk_level})
 
         if existing:
             alerts_collection.update_one({"_id": existing["_id"]}, {"$set": doc})
         else:
             alerts_collection.insert_one(doc)
 
-        return doc  # FastAPI will use AlertResponse for validation
+        # Return cleaned document matching AlertResponse
+        response_doc = {
+            "city": doc["city"],
+            "risk_level": doc["risk_level"],
+            "risk_assessment": doc["risk_assessment"],
+            "actions": doc["actions"]
+        }
+
+        return JSONResponse(status_code=200, content=response_doc)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save alert: {e}")
+
 
 
 # =====================================================

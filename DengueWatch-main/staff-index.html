@@ -36,10 +36,9 @@
                 <span class="font-bold text-xl">DengueWatch NCR</span>
             </div>
             <div class="hidden md:flex space-x-6">
-                <a href="index.html" class="hover:text-indigo-300">Dashboard</a>
-                <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
-                <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
-             
+                <a href="staff-index.html" class="hover:text-indigo-300">Dashboard</a>
+                <a href="staff-alerts.html" class="hover:text-indigo-300">Alerts</a>
+                <a href="staff-prevention.html" class="hover:text-indigo-300">Prevention</a>
                 <a href="#" id="logoutBtn" class="hover:text-indigo-300">Logout</a>
             </div>
 <button class="mobile-menu-button md:hidden">
@@ -49,14 +48,10 @@
         <!-- Mobile Menu -->
             <div class="mobile-menu hidden md:hidden bg-blue-700 w-full absolute top-full left-0 z-50">
             <div class="container mx-auto px-4 py-3 flex flex-col space-y-4">
-                <a href="index.html" class="hover:text-indigo-300">Dashboard</a>
-                <a href="alerts.html" class="hover:text-indigo-300">Alerts</a>
-                <a href="prevention.html" class="hover:text-indigo-300">Prevention</a>
-                <script>
-                    if (sessionStorage.getItem('role') === 'admin') {
-                        document.write('<a href="admin-panel.html" class="hover:text-indigo-300">Admin</a>');
-                    }
-                </script>
+                <a href="staff-index.html" class="hover:text-indigo-300">Dashboard</a>
+                <a href="staff-alerts.html" class="hover:text-indigo-300">Alerts</a>
+                <a href="staff-prevention.html" class="hover:text-indigo-300">Prevention</a>
+                
                 <a href="#" id="logoutBtn" class="hover:text-indigo-300">Logout</a>
 
             </div>
@@ -99,11 +94,7 @@
     </div>
             <!-- Risk Overview Card -->
             <div class="card">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Current Risk Level</h2>
-                    <span class="risk-high px-3 py-1 rounded-full text-white text-sm font-medium">HIGH ALERT</span>
-                </div>
-                <p class="text-gray-600 mb-4">NCR-wide dengue risk assessment</p>
+                <h2 class="text-xl font-bold mb-4">NCR Dengue Risk Overview</h2>
                 <div class="chart-container">
                     <canvas id="riskChart"></canvas>
                 </div>
@@ -346,40 +337,86 @@
     </footer>
     <script src="script.js"></script>
    <script>
-    const riskColors = {
-        Low: '#4ade80',
-        Moderate: '#fbbf24',
-        High: '#f87171',
-        VeryHigh: '#dc2626'
-    };
+const riskColors = {
+    Low: '#4ade80',
+    Moderate: '#fbbf24',
+    High: '#f87171',
+    VeryHigh: '#dc2626'
+};
 
-    async function updateMapRisks() {
-        try {
-            const response = await fetch('http://localhost:8000/api/latest-forecast');
-            if (!response.ok) throw new Error("Failed to fetch risk data");
+async function updateMapRisks() {
+    try {
+        const response = await fetch('http://localhost:8000/api/latest-forecast');
+        if (!response.ok) throw new Error("Failed to fetch risk data");
 
-            const riskDataFromDB = await response.json();
+        const riskDataFromDB = await response.json();
 
-            document.querySelectorAll('.risk-path').forEach(path => {
-                const city = path.getAttribute('city');  // use city attribute
+        // Reset risk counts
+        let riskCounts = { Low: 0, Moderate: 0, High: 0 , VeryHigh: 0 };
 
-                const record = riskDataFromDB.find(item => item.city === city);
-                if (!record) {
-                    console.warn('No risk data for:', city);
-                    return;
+        document.querySelectorAll('.risk-path').forEach(path => {
+            const city = path.getAttribute('city');  // your city attribute
+            const record = riskDataFromDB.find(item => item.city === city);
+            if (!record) {
+                path.style.fill = '#bfbfbf'; // default color
+                return;
+            }
+
+            const risk = record.risk_level;
+
+            // Set both attribute and dataset for compatibility
+            path.setAttribute('risk_level', risk);
+            path.dataset.risk = risk; // needed for chart
+
+            path.style.fill = riskColors[risk] || '#bfbfbf';
+
+            // Count for chart
+            if (riskCounts[risk] !== undefined) riskCounts[risk]++;
+        });
+
+        // Create chart if element exists
+        if (document.getElementById('riskChart')) {
+            const riskCtx = document.getElementById('riskChart').getContext('2d');
+
+            // Destroy old chart if it exists
+            if (window.riskChartInstance) window.riskChartInstance.destroy();
+
+            window.riskChartInstance = new Chart(riskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Moderate Risk', 'High Risk', 'Very High Risk'],
+                    datasets: [{
+                        data: [
+                            riskCounts.Low,
+                            riskCounts.Moderate,
+                            riskCounts.High,
+                            riskCounts.VeryHigh
+                        ],
+                        backgroundColor: ['#4ade80', '#fbbf24', '#f87171','#dc2626'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
                 }
-
-                const risk = record.risk_level;
-                path.setAttribute('risk_level', risk);  // set risk_level attribute
-                path.style.fill = riskColors[risk] || '#bfbfbf';
             });
-        } catch (err) {
-            console.error('Error fetching or applying risk data:', err);
         }
-    }
 
-    window.addEventListener('DOMContentLoaded', updateMapRisks);
+    } catch (err) {
+        console.error('Error fetching or applying risk data:', err);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', updateMapRisks);
 </script>
+
 
 
 </body>
