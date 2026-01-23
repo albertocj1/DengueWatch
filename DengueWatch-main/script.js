@@ -390,7 +390,7 @@ window.addEventListener('DOMContentLoaded', updateMapRisks);
 
 // Weather update function
 function updateWeather(city = "Manila") {
-    const apiKey = "003f133077684b34a7493149260701"; // Replace with your WeatherAPI key
+    const apiKey = "fd5f51d2101b472aa31195301262101"; // Replace with your WeatherAPI key
     fetch(`https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(city)}&days=14`)
         .then(response => response.json())
         .then(data => {
