@@ -428,12 +428,29 @@ async function populateCasesTable() {
     if (!tableBody) return;
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/api/cases-latest");
-        const casesData = await response.json();
+        // Fetch latest cases
+        const casesResponse = await fetch("http://127.0.0.1:8000/api/cases-latest");
+        const casesData = await casesResponse.json();
 
+        // Fetch latest risk levels
+        const riskResponse = await fetch("http://127.0.0.1:8000/api/risk-latest");
+        const riskData = await riskResponse.json();
+
+        // Merge cases + risk by city
+        const mergedData = casesData.map(item => {
+            const riskItem = riskData.find(r => r.city === item.city);
+            return {
+                ...item,
+                risk_level: riskItem ? riskItem.risk_level : "Unknown",
+                created_at: item.last_updated
+            };
+        });
+
+        // Clear table
         tableBody.innerHTML = "";
 
-        casesData.forEach(item => {
+        // Populate table
+        mergedData.forEach(item => {
             const row = document.createElement("tr");
             row.className = "hover:bg-gray-50";
 
