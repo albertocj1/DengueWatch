@@ -120,15 +120,7 @@
                         <p class="text-2xl font-bold" id="temperature">28°C</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="text-4xl">
-                        <i data-feather="alert-triangle" class="text-yellow-500"></i>
-                    </div>
-                    <div>
-                        <p class="text-gray-500">Dengue Risk</p>
-                        <p class="text-2xl font-bold" id="dengue-risk">High</p>
-                    </div>
-                </div>
+                
             </div>
             
             <!-- Past Week Weather -->
@@ -173,9 +165,10 @@
             <div class="p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <div class="flex items-center mb-2">
-                            <span class="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                            <span class="font-bold text-red-500">CRITICAL ALERT</span>
+                       <div class="flex items-center mb-2" id="alert-severity-badge">
+                             <!-- dynamically populated -->
+                
+
                         </div>
                         <h2 class="text-2xl font-bold" id="alert-modal-title">Quezon City Outbreak</h2>
                     </div>

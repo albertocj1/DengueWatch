@@ -600,25 +600,21 @@ function updateWeather(city = "Manila") {
             const rainProbability = data.forecast.forecastday[0].day.daily_chance_of_rain + "%";
 
             // Risk calculation
-            let dengueRisk = "Low";
+           
             let advisory = "Normal weather conditions. Maintain regular prevention measures.";
             const rainChance = parseInt(data.forecast.forecastday[0].day.daily_chance_of_rain);
 
             if (rainChance > 70) {
-                dengueRisk = "Critical";
                 advisory = "Very high rain probability increases standing water. Expect increased mosquito activity.";
             } else if (rainChance > 50) {
-                dengueRisk = "High";
                 advisory = "Frequent rain expected. Check and eliminate standing water around your area.";
             } else if (rainChance > 30) {
-                dengueRisk = "Medium";
                 advisory = "Moderate rain probability. Stay alert and continue preventive actions.";
             }
 
             // Update current weather UI
             document.getElementById('rain-probability').textContent = rainProbability;
             document.getElementById('temperature').textContent = `${temperature}°C`;
-            document.getElementById('dengue-risk').textContent = dengueRisk;
             document.getElementById('weather-advisory').textContent = advisory;
             document.getElementById('weather-update-time').textContent = new Date().toLocaleTimeString();
 
