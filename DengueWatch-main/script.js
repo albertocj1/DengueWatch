@@ -19,6 +19,34 @@ const landAreaToCity = {
     47.02: "VALENZUELA CITY"
 };
 
+const alertStyles = {
+    Low: {
+        border: "border-green-500",
+        badge: "bg-green-100 text-green-800",
+        dot: "bg-green-500",
+        label: "LOW ALERT"
+    },
+    Moderate: {
+        border: "border-yellow-500",
+        badge: "bg-yellow-100 text-yellow-800",
+        dot: "bg-yellow-500",
+        label: "MEDIUM ALERT"
+    },
+    High: {
+        border: "border-red-500",
+        badge: "bg-red-100 text-red-800",
+        dot: "bg-red-500",
+        label: "HIGH ALERT"
+    },
+    "Very High": {
+        border: "border-red-500",
+        badge: "bg-red-100 text-red-800",
+        dot: "bg-red-500",
+        label: "CRITICAL ALERT"
+    }
+};
+
+
 const fileInput = document.getElementById("csv-upload");
 let selectedFile = null;
 
@@ -388,6 +416,179 @@ async function initializeApp() {
 
 window.addEventListener('DOMContentLoaded', updateMapRisks);
 
+async function loadAlertsFromAPI() {
+    const container = document.getElementById("alerts-container");
+    if (!container) return;
+
+    container.innerHTML = "<p class='text-gray-500'>Loading alerts...</p>";
+
+    try {
+        const res = await fetch("http://localhost:8000/api/alerts");
+        if (!res.ok) throw new Error("Failed to fetch alerts");
+
+        const alerts = await res.json();
+        container.innerHTML = "";
+
+        if (!alerts.length) {
+            container.innerHTML = "<p class='text-gray-500'>No alerts available.</p>";
+            return;
+        }
+
+        alerts.forEach((alert, index) => {
+            const style = alertStyles[alert.alert_level] || alertStyles.Low;
+
+            const card = document.createElement("div");
+            card.className = `
+                alert-card bg-white rounded-xl shadow-lg overflow-hidden
+                border-l-4 ${style.border}
+            `;
+            card.dataset.risk = alert.alert_level.toLowerCase();
+
+            card.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center mb-2">
+                                <span class="inline-block w-3 h-3 ${style.dot} rounded-full mr-2"></span>
+                                <span class="font-bold">${style.label}</span>
+                            </div>
+                            <h2 class="text-xl font-bold">${alert.city}</h2>
+                            <p class="text-gray-600">
+                                ${alert.percent_change > 0 ? "Increase" : "Decrease"}
+                                of ${Math.abs(alert.percent_change)}% from last week
+                            </p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium ${style.badge}">
+                            ${alert.alert_level}
+                        </span>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500">Current Week</p>
+                            <p class="font-semibold">${alert.current_week_cases}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Previous Week</p>
+                            <p class="font-semibold">${alert.previous_week_cases}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Last Updated</p>
+                            <p class="font-semibold">${alert.last_updated}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 flex justify-end">
+                    <button
+                        class="text-blue-600 hover:text-blue-700 flex items-center alert-details-btn"
+                        data-alert='${encodeURIComponent(JSON.stringify(alert))}'>
+                        <span>More Details</span>
+                        <i data-feather="chevron-right" class="w-4 h-4 ml-1"></i>
+                    </button>
+
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+
+        feather.replace();
+        setupAlertModalDynamic();
+
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = "<p class='text-red-500'>Failed to load alerts.</p>";
+    }
+}
+
+function setupAlertModalDynamic() {
+    const modal = document.getElementById('alert-modal');
+    const closeBtn = document.getElementById('close-modal');
+    const detailBtns = document.querySelectorAll('.alert-details-btn');
+
+    detailBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            // Decode and parse the alert object from data-alert
+            const alert = JSON.parse(decodeURIComponent(btn.dataset.alert));
+
+            // Fetch latest risk level from API for this city
+            let riskLevel = "LOW";
+            try {
+                const res = await fetch("http://localhost:8000/api/risk-latest");
+                if (res.ok) {
+                    const latestRisks = await res.json();
+                    const cityRisk = latestRisks.find(r => r.city === alert.city);
+                    if (cityRisk && cityRisk.risk_level) {
+                        riskLevel = cityRisk.risk_level;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch latest risk:", e);
+            }
+
+            // Populate modal content
+            document.getElementById('alert-modal-title').textContent = alert.city;
+            document.getElementById('alert-location').textContent = alert.city;
+            document.getElementById('alert-cases').textContent = alert.current_week_cases;
+            document.getElementById('alert-increase').textContent = alert.percent_change + '%';
+            document.getElementById('alert-assessment').textContent =
+                `This area is classified as ${riskLevel} risk.`;
+            document.getElementById('alert-updated').textContent = alert.last_updated;
+
+            // Update status indicator (dot + text)
+            const statusIndicator = document.querySelector('#alert-modal .font-bold');
+            if (statusIndicator) {
+                statusIndicator.textContent = riskLevel;
+                statusIndicator.className = `font-bold ${
+                    riskLevel === 'CRITICAL' ? 'text-red-500' :
+                    riskLevel === 'MEDIUM' ? 'text-yellow-600' : 'text-green-600'
+                }`;
+
+                const dot = statusIndicator.previousElementSibling;
+                if (dot) {
+                    dot.className = `inline-block w-3 h-3 ${
+                        riskLevel === 'CRITICAL' ? 'bg-red-500' :
+                        riskLevel === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
+                    } rounded-full mr-2`;
+                }
+            }
+
+            // Recommended actions
+            const actionsList = document.querySelector('#alert-modal ul');
+            actionsList.innerHTML = '';
+            const recommended = alert.recommendedActions || [];
+            recommended.forEach(action => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start';
+                li.innerHTML = `
+                    <i data-feather="check-circle" class="text-green-500 mr-2 mt-0.5"></i>
+                    <span>${action}</span>
+                `;
+                actionsList.appendChild(li);
+            });
+
+            feather.replace();
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    });
+}
+
+
+
 // Weather update function
 function updateWeather(city = "Manila") {
     const apiKey = "fd5f51d2101b472aa31195301262101"; // Replace with your WeatherAPI key
@@ -470,112 +671,7 @@ function updateWeather(city = "Manila") {
             document.getElementById('forecast-weather').innerHTML = '<div class="text-center text-gray-500">Weather data unavailable</div>';
         });
 }
-// Alert data and recommendations (would normally come from API)
-const alertData = {
-    "1": {
-        title: "Quezon City Outbreak",
-        location: "Quezon City",
-        cases: "247 this week",
-        increase: "120%",
-        assessment: "This area has exceeded the epidemic threshold with a rapid increase in cases.",
-        updated: "Today, 10:45 AM",
-        status: "CRITICAL ALERT",
-        risk: "high",
-        recommendedActions: [
-            "Conduct immediate fogging operations",
-            "Deploy additional medical teams",
-            "Issue public health advisory"
-        ]
-    },
-    "2": {
-        title: "Manila Cluster",
-        location: "Manila",
-        cases: "87 this week",
-        increase: "45%",
-        assessment: "This area is approaching the epidemic threshold with moderate increase in cases.",
-        updated: "Today, 8:30 AM",
-        status: "MODERATE ALERT",
-        risk: "moderate",
-        recommendedActions: [
-            "Increase public awareness campaigns",
-            "Schedule neighborhood cleanups",
-            "Monitor high-risk areas daily"
-        ]
-    },
-    "3": {
-        title: "Makati Monitoring",
-        location: "Makati",
-        cases: "23 this week",
-        increase: "15%",
-        assessment: "This area is being monitored for potential outbreak.",
-        updated: "Yesterday, 4:15 PM",
-        status: "LOW ALERT",
-        risk: "low",
-        recommendedActions: [
-            "Continue routine inspections",
-            "Educate residents on prevention",
-            "Maintain mosquito control measures"
-        ]
-    }
-};
 
-// City-specific alert recommendations
-const cityRecommendations = {
-    "Manila": {
-        assessment: "This area has exceeded the epidemic threshold with a rapid increase in cases.",
-        recommendedActions: [
-            "Conduct immediate fogging operations",
-            "Deploy additional medical teams",
-            "Issue public health advisory"
-        ]
-    },
-    "Quezon City": {
-        assessment: "This area is approaching the epidemic threshold with moderate increase in cases.",
-        recommendedActions: [
-            "Increase public awareness campaigns",
-            "Schedule neighborhood cleanups",
-            "Monitor high-risk areas daily"
-        ]
-    },
-    // Add all other cities with their default recommendations
-    "Caloocan": {
-        assessment: "This area is being monitored for potential outbreak.",
-        recommendedActions: [
-            "Conduct immediate fogging operations",
-            "Deploy additional medical teams",
-            "Issue public health advisory"
-        ]
-    },
-    // ... other cities
-    "Default": {
-        assessment: "This area is being monitored for potential outbreak.",
-        recommendedActions: [
-            "Continue routine inspections",
-            "Educate residents on prevention",
-            "Maintain mosquito control measures"
-        ]
-    }
-};
-
-function getCityRecommendations(city) {
-    return cityRecommendations[city] || cityRecommendations["Default"];
-}
-
-function updateCityRecommendations(city, assessment, actions) {
-    if (!cityRecommendations[city]) {
-        cityRecommendations[city] = {};
-    }
-    cityRecommendations[city].assessment = assessment;
-    cityRecommendations[city].recommendedActions = actions;
-    
-    // Also update any active alerts for this city
-    Object.values(alertData).forEach(alert => {
-        if (alert.location === city) {
-            alert.assessment = assessment;
-            alert.recommendedActions = actions;
-        }
-    });
-}
 // Filter alerts by risk level
 function filterAlerts(riskLevel) {
     const alerts = document.querySelectorAll('.alert-card');
@@ -607,34 +703,135 @@ function initializeFilter() {
         });
     }
 }
-// Handle alert details modal
-function setupAlertModal() {
+
+function updateAlertModalSeverity(alertLevel) {
+    const normalizedLevel = alertLevel?.trim() || "Low";
+
+    const levelConfig = {
+        "Very High": {
+            dot: "bg-red-600",
+            text: "text-red-600",
+            label: "CRITICAL ALERT",
+            riskLabel: "Critical Risk Area",
+            bg: "bg-red-50",
+            icon: "text-red-500"
+        },
+        High: {
+            dot: "bg-red-500",
+            text: "text-red-500",
+            label: "HIGH ALERT",
+            riskLabel: "High Risk Area",
+            bg: "bg-red-50",
+            icon: "text-red-500"
+        },
+        Moderate: {
+            dot: "bg-yellow-500",
+            text: "text-yellow-600",
+            label: "MODERATE ALERT",
+            riskLabel: "Moderate Risk Area",
+            bg: "bg-yellow-50",
+            icon: "text-yellow-500"
+        },
+        Low: {
+            dot: "bg-green-500",
+            text: "text-green-600",
+            label: "LOW ALERT",
+            riskLabel: "Low Risk Area",
+            bg: "bg-green-50",
+            icon: "text-green-500"
+        }
+    };
+
+    const config = levelConfig[normalizedLevel] || levelConfig.Low;
+
+    document.getElementById("alert-severity-badge").innerHTML = `
+        <span class="inline-block w-3 h-3 ${config.dot} rounded-full mr-2"></span>
+        <span class="font-bold ${config.text}">${config.label}</span>
+    `;
+
+    document.getElementById("alert-risk-header").innerHTML = `
+        <i data-feather="alert-triangle" class="${config.icon} mr-2"></i>
+        <span class="font-bold ${config.text}">${config.riskLabel}</span>
+    `;
+
+    document
+        .getElementById("alert-risk-header")
+        .parentElement
+        .className = `${config.bg} p-4 rounded-lg`;
+
+    feather.replace();
+}
+
+function setupAlertModalDynamic() {
     const modal = document.getElementById('alert-modal');
     const closeBtn = document.getElementById('close-modal');
     const detailBtns = document.querySelectorAll('.alert-details-btn');
 
     detailBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const alertId = btn.getAttribute('data-alert-id');
-            const alert = alertData[alertId];
-            
-            if (alert) {
-                document.getElementById('alert-modal-title').textContent = alert.title;
-                document.getElementById('alert-location').textContent = alert.location;
-                document.getElementById('alert-cases').textContent = alert.cases;
-                document.getElementById('alert-increase').textContent = alert.increase;
-                document.getElementById('alert-assessment').textContent = alert.assessment;
-                document.getElementById('alert-updated').textContent = alert.updated;
-                
-                // Update status indicator
-                const statusIndicator = document.querySelector('#alert-modal .font-bold.text-red-500');
-                statusIndicator.textContent = alert.status;
-                statusIndicator.previousElementSibling.className = `inline-block w-3 h-3 ${alert.risk === 'high' ? 'bg-red-500' : alert.risk === 'moderate' ? 'bg-yellow-500' : 'bg-green-500'} rounded-full mr-2`;
-                
-                // Update recommended actions
-                const actionsList = document.querySelector('#alert-modal ul');
-                actionsList.innerHTML = '';
-                alert.recommendedActions.forEach(action => {
+            // Decode and parse alert object
+            const alert = JSON.parse(decodeURIComponent(btn.dataset.alert));
+
+            // Normalize risk level (backend may send VeryHigh)
+            const normalizedLevel =
+                alert.alert_level === "VeryHigh"
+                    ? "Very High"
+                    : alert.alert_level;
+
+            // Populate modal title and basic info
+            document.getElementById('alert-modal-title').textContent = alert.city;
+            document.getElementById('alert-location').textContent = alert.city;
+            document.getElementById('alert-cases').textContent = alert.current_week_cases;
+            document.getElementById('alert-increase').textContent = alert.percent_change + '%';
+            document.getElementById('alert-updated').textContent = alert.last_updated;
+            // Update severity badge
+            updateAlertModalSeverity(normalizedLevel);
+
+            // Use risk_assessment from DB (fallback text if missing)
+            document.getElementById('alert-assessment').textContent =
+                alert.risk_assessment ||
+                `This area is classified as ${normalizedLevel} risk.`;
+
+            // Populate risk header (icon + text)
+            const riskHeader = document.getElementById('alert-risk-header');
+            if (riskHeader) {
+                const levelColors = {
+                    "Very High": {
+                        text: 'text-red-600',
+                        icon: 'text-red-500',
+                        label: 'High Risk Area'
+                    },
+                    High: {
+                        text: 'text-red-600',
+                        icon: 'text-red-500',
+                        label: 'High Risk Area'
+                    },
+                    Moderate: {
+                        text: 'text-yellow-600',
+                        icon: 'text-yellow-500',
+                        label: 'Moderate Risk Area'
+                    },
+                    Low: {
+                        text: 'text-green-600',
+                        icon: 'text-green-500',
+                        label: 'Low Risk Area'
+                    }
+                };
+
+                const colors = levelColors[normalizedLevel] || levelColors.Low;
+
+                riskHeader.innerHTML = `
+                    <i data-feather="alert-triangle" class="${colors.icon} mr-2"></i>
+                    <span class="font-bold ${colors.text}">${colors.label}</span>
+                `;
+            }
+
+            // Populate recommended actions (from MongoDB)
+            const actionsList = document.querySelector('#alert-modal ul');
+            actionsList.innerHTML = '';
+
+            if (alert.actions && alert.actions.length > 0) {
+                alert.actions.forEach(action => {
                     const li = document.createElement('li');
                     li.className = 'flex items-start';
                     li.innerHTML = `
@@ -643,18 +840,26 @@ function setupAlertModal() {
                     `;
                     actionsList.appendChild(li);
                 });
-                feather.replace();
-                
-                modal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+            } else {
+                actionsList.innerHTML = `<li>No recommended actions.</li>`;
             }
+
+            // Render feather icons
+            feather.replace();
+
+            // Show modal
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         });
     });
-closeBtn.addEventListener('click', () => {
+
+    // Close modal button
+    closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto';
     });
 
+    // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.classList.add('hidden');
@@ -662,6 +867,8 @@ closeBtn.addEventListener('click', () => {
         }
     });
 }
+
+
 // Populate cases table
 function populateCasesTable() {
     const tableBody = document.getElementById('cases-table-body');
@@ -810,6 +1017,7 @@ function previewLocalCSV(file) {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
+    loadAlertsFromAPI();
     setupAlertModal();
     initializeFilter();
     

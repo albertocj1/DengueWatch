@@ -617,4 +617,114 @@ async def preprocessing(file: UploadFile = File(...), weeks_ahead: int = 4):
             detail=f"CSV preprocessing failed: {e}"
         )
     
+@app.get("/api/alerts")
+async def get_weekly_alerts_from_latest_csv():
+    """
+    Generates weekly dengue alerts per city based on the latest uploaded CSV,
+    and enriches them with risk assessment & recommended actions
+    from alert_recommendations collection.
+    """
+    try:
+        # 1. Get latest CSV upload
+        csv_doc = db["raw_csv_uploads"].find_one(sort=[("uploaded_at", -1)])
+        if not csv_doc:
+            return []
+
+        # 2. Read CSV
+        csv_bytes = bytes(csv_doc["data"])
+        df = pd.read_csv(io.BytesIO(csv_bytes))
+
+        # 3. Clean & normalize
+        df.columns = [c.strip().upper() for c in df.columns]
+        df["CITY"] = df["CITY"].str.strip().str.upper()
+        df["CASES"] = pd.to_numeric(df["CASES"], errors="coerce")
+
+        df["DATE"] = pd.to_datetime(
+            df[["YEAR", "MONTH", "DAY"]],
+            errors="coerce"
+        )
+
+        df = df.dropna(subset=["CITY", "CASES", "DATE"])
+
+        alerts = []
+
+        # --- Get latest risk per city from forecasts collection ---
+        pipeline = [
+            {"$sort": {"created_at": -1}},
+            {"$group": {
+                "_id": "$city",
+                "city": {"$first": "$city"},
+                "risk_level": {"$first": "$risk_level"},
+                "forecast_week": {"$first": "$forecast_week"},
+                "created_at": {"$first": "$created_at"}
+            }},
+            {"$project": {"_id": 0}}
+        ]
+
+        latest_risks = {
+            r["city"].upper(): r["risk_level"]
+            for r in db["forecasts"].aggregate(pipeline)
+        }
+
+        # 4. Per-city aggregation
+        for city, city_df in df.groupby("CITY"):
+
+            city_df = city_df.sort_values("DATE")
+            latest_row = city_df.iloc[-1]
+            latest_date = latest_row["DATE"]
+
+            current_start = latest_date - pd.Timedelta(days=6)
+            previous_start = current_start - pd.Timedelta(days=7)
+            previous_end = current_start - pd.Timedelta(days=1)
+
+            current_cases = city_df.loc[
+                (city_df["DATE"] >= current_start) &
+                (city_df["DATE"] <= latest_date),
+                "CASES"
+            ].sum()
+
+            previous_cases = city_df.loc[
+                (city_df["DATE"] >= previous_start) &
+                (city_df["DATE"] <= previous_end),
+                "CASES"
+            ].sum()
+
+            if previous_cases == 0:
+                percent_change = 100.0 if current_cases > 0 else 0.0
+            else:
+                percent_change = ((current_cases - previous_cases) / previous_cases) * 100
+
+            alert_level = latest_risks.get(city, "Low")
+
+            # 🔥 NEW: Fetch alert recommendations
+            alert_doc = alerts_collection.find_one(
+                {
+                    "city": city,
+                    "risk_level": alert_level
+                },
+                {"_id": 0}
+            )
+
+            alerts.append({
+                "city": city,
+                "current_week_cases": int(current_cases),
+                "previous_week_cases": int(previous_cases),
+                "percent_change": round(percent_change, 1),
+                "alert_level": alert_level,
+                "risk_assessment": alert_doc.get("risk_assessment", "No assessment available.")
+                    if alert_doc else "No assessment available.",
+                "actions": alert_doc.get("actions", []) if alert_doc else [],
+                "last_updated": latest_row["DATE"].strftime("%Y-%m-%d")
+            })
+
+        return alerts
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate alerts: {e}"
+        )
+
+
+    
 handler = Mangum(app)

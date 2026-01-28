@@ -158,105 +158,13 @@
         </div>
         <!-- Alerts List -->
         <div class="space-y-6">
-            <!-- Dummy Alert Data -->
-            <div id="alerts-container" class="space-y-8">
-    <!-- Critical Alert -->
-    <div class="alert-card bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-red-500" data-risk="high">
-<div class="p-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="flex items-center mb-2">
-                                <span class="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                                <span class="font-bold text-red-500">CRITICAL ALERT</span>
-                            </div>
-                            <h2 class="text-xl font-bold">Quezon City Outbreak</h2>
-                            <p class="text-gray-600">Case count increased by 120% in the last 7 days</p>
-                        </div>
-                        <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">URGENT</span>
-                    </div>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <p class="text-gray-500">Cases Reported</p>
-                            <p class="font-semibold">247 this week</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500">Last Updated</p>
-                            <p class="font-semibold">Today, 10:45 AM</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 px-6 py-3 flex justify-end items-center">
-                    <button class="text-blue-600 hover:text-blue-700 flex items-center alert-details-btn" data-alert-id="1">
-                        <span>More Details</span>
-                        <i data-feather="chevron-right" class="w-4 h-4 ml-1"></i>
-                    </button>
+            <!-- Alerts List (populated dynamically from API) -->
+<div class="space-y-6">
+    <div id="alerts-container" class="space-y-8">
+        <!-- Alerts injected by script.js -->
+    </div>
 </div>
-            </div>
-            <!-- Medium Alert -->
-            <div class="alert-card bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-yellow-500" data-risk="medium">
-                <div class="p-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="flex items-center mb-2">
-                                <span class="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-                                <span class="font-bold text-yellow-500">MEDIUM ALERT</span>
-                            </div>
-                            <h2 class="text-xl font-bold">Manila Cluster</h2>
-                            <p class="text-gray-600">Case count increased by 45% in the last 7 days</p>
-                        </div>
-                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">WATCH</span>
-                    </div>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <p class="text-gray-500">Cases Reported</p>
-                            <p class="font-semibold">87 this week</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500">Last Updated</p>
-                            <p class="font-semibold">Today, 8:30 AM</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 px-6 py-3 flex justify-end items-center">
-                    <button class="text-blue-600 hover:text-blue-700 flex items-center alert-details-btn" data-alert-id="2">
-                        <span>More Details</span>
-                        <i data-feather="chevron-right" class="w-4 h-4 ml-1"></i>
-                    </button>
-                </div>
-            </div>
 
-            <!-- Low Alert -->
-            <div class="alert-card bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-green-500" data-risk="low">
-                <div class="p-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="flex items-center mb-2">
-                                <span class="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                                <span class="font-bold text-green-500">LOW ALERT</span>
-                            </div>
-                            <h2 class="text-xl font-bold">Makati Monitoring</h2>
-                            <p class="text-gray-600">Case count increased by 15% in the last 7 days</p>
-                        </div>
-                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">MONITORING</span>
-                    </div>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <p class="text-gray-500">Cases Reported</p>
-                            <p class="font-semibold">23 this week</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500">Last Updated</p>
-                            <p class="font-semibold">Yesterday, 4:15 PM</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 px-6 py-3 flex justify-end items-center">
-                    <button class="text-blue-600 hover:text-blue-700 flex items-center alert-details-btn" data-alert-id="3">
-                        <span>More Details</span>
-                        <i data-feather="chevron-right" class="w-4 h-4 ml-1"></i>
-                    </button>
-                </div>
-            </div>
 </div>
 </div>
     <!-- Alert Details Modal -->
@@ -298,10 +206,9 @@
                     <div>
                         <h3 class="font-semibold mb-2">Risk Assessment</h3>
                         <div class="bg-red-50 p-4 rounded-lg">
-                            <div class="flex items-center mb-2">
-                                <i data-feather="alert-triangle" class="text-red-500 mr-2"></i>
-                                <span class="font-bold text-red-600">High Risk Area</span>
-                            </div>
+                            <div id="alert-risk-header" class="flex items-center mb-2">
+    <!-- This will be dynamically populated -->
+</div>
                             <p class="text-sm text-gray-700" id="alert-assessment">This area has exceeded the epidemic threshold with a rapid increase in cases.</p>
                         </div>
                     </div>
